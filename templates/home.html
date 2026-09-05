@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+<div class="hero text-center">
+    <h1 class="display-4 fw-bold">Добро пожаловать в АгроХаб</h1>
+    <p class="lead">Всё для сельского хозяйства</p>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="section-title">Новости фермеров</h3>
+    </div>
+    {% for item in news %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.title }}</h5>
+                    <p class="text-muted">{{ item.date|date:"d.m.Y" }}</p>
+                    <p>{{ item.content|truncatewords:20 }}</p>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>Новостей пока нет.</p>
+    {% endfor %}
+</div>
+{% endblock %}

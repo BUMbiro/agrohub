@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ category.name }}</h2>
+<p>{{ category.description }}</p>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for product in products %}
+        <div class="col">
+            <div class="card h-100 text-center p-3">
+                <div class="card-body">
+                    <!-- Эмодзи вместо иконок -->
+                    {% if product.category.slug == 'seeds' %}
+                        <span style="font-size:4rem;">🌾</span>
+                    {% elif product.category.slug == 'fertilizers' %}
+                        <span style="font-size:4rem;">🌱</span>
+                    {% elif product.category.slug == 'agrochemicals' %}
+                        <span style="font-size:4rem;">🧪</span>
+                    {% elif product.category.slug == 'garden_tools' %}
+                        <span style="font-size:4rem;">🔧</span>
+                    {% elif product.category.slug == 'power_tools' %}
+                        <span style="font-size:4rem;">⚡</span>
+                    {% elif product.category.slug == 'mini_equipment' %}
+                        <span style="font-size:4rem;">🚜</span>
+                    {% elif product.category.slug == 'irrigation' %}
+                        <span style="font-size:4rem;">💧</span>
+                    {% elif product.category.slug == 'seedlings' %}
+                        <span style="font-size:4rem;">🌳</span>
+                    {% else %}
+                        <span style="font-size:4rem;">📦</span>
+                    {% endif %}
+
+                    <h5 class="card-title mt-2">{{ product.name }}</h5>
+                    <p class="card-text">{{ product.description|truncatewords:10 }}</p>
+                    <p class="fw-bold">{{ product.price }} ₽ / {{ product.unit }}</p>
+                    <a href="/product/{{ product.slug }}/" class="btn btn-primary">Подробнее</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>В этой категории пока нет товаров.</p>
+    {% endfor %}
+</div>
+{% endblock %}

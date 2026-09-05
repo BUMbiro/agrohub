@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="card p-4">
+    <h2>{{ product.name }}</h2>
+    <p><strong>Категория:</strong> {{ product.category.name }}</p>
+    <p>{{ product.description }}</p>
+    <p><strong>Цена:</strong> {{ product.price }} ₽ / {{ product.unit }}</p>
+    <p>{% if product.in_stock %}В наличии{% else %}Нет в наличии{% endif %}</p>
+    <a href="/" class="btn btn-secondary">На главную</a>
+</div>
+{% endblock %}
