@@ -1,10 +1,18 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv  # читаем переменные из .env
+
+# Загружаем переменные окружения из .env в процесс
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-your-secret-key'
-DEBUG = True
+# Секретный ключ из .env, fallback — только для локальной разработки
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key')
+
+# DEBUG читаем из .env и превращаем строку в bool
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
@@ -47,10 +55,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Подключение к PostgreSQL. Все значения — из .env
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -68,6 +81,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Медиа-файлы (изображения товаров)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
