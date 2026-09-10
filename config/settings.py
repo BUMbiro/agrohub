@@ -1,11 +1,24 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv  # читаем переменные из .env
-
-# Загружаем переменные окружения из .env в процесс
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _load_env_file(path):
+    """Простой парсер .env: читает KEY=VALUE и выставляет их в os.environ."""
+    if not path.exists():
+        return
+    with open(path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, _, value = line.partition('=')
+            os.environ.setdefault(key.strip(), value.strip())
+
+
+# Загружаем переменные из .env (пароль БД, SECRET_KEY и т.п.)
+_load_env_file(BASE_DIR / '.env')
 
 # Секретный ключ из .env, fallback — только для локальной разработки
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key')

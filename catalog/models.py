@@ -113,3 +113,30 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Contact(models.Model):
+    """Контактные данные магазина (для страницы контактов)."""
+
+    name = models.CharField(
+        max_length=100,
+        verbose_name='Название организации',
+    )
+    address = models.CharField(
+        max_length=200,
+        verbose_name='Адрес',
+    )
+    phone = models.CharField(
+        max_length=30,
+        verbose_name='Телефон',
+    )
+    email = models.EmailField(
+        verbose_name='Email',
+    )
+
+    class Meta:
+        verbose_name = 'Контакт'
+        verbose_name_plural = 'Контакты'
+
+    def __str__(self):
+        return self.name

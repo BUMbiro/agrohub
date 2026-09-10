@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, News
+from .models import Category, Product, News, Contact
 
 
 @admin.register(Category)
@@ -29,3 +29,10 @@ class NewsAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'date')
     search_fields = ('title', 'content')
     list_filter = ('date',)
+
+
+@admin.register(Contact)
+class ContactAdmin(admin.ModelAdmin):
+    """Админка контактов: id, name, phone, email."""
+
+    list_display = ('id', 'name', 'phone', 'email')
