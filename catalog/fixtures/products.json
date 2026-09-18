@@ -46,5 +46,149 @@
     "created_at": "2026-09-10T10:43:23.488Z",
     "updated_at": "2026-09-10T10:43:23.488Z"
   }
+},
+{
+  "model": "catalog.product",
+  "pk": 5,
+  "fields": {
+    "category": 6,
+    "name": "Фитоспорин-М",
+    "slug": "fitosporin-m",
+    "description": "Биологический фунгицид для защиты растений от грибковых заболеваний",
+    "price": "250.00",
+    "unit": "упак.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:10.315Z",
+    "updated_at": "2026-09-18T14:12:10.315Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 6,
+  "fields": {
+    "category": 6,
+    "name": "Гербицид Раундап",
+    "slug": "gerbicid-raundap",
+    "description": "Системный гербицид сплошного действия для борьбы с сорняками",
+    "price": "480.00",
+    "unit": "л",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:10.343Z",
+    "updated_at": "2026-09-18T14:12:10.343Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 7,
+  "fields": {
+    "category": 7,
+    "name": "Лопата штыковая",
+    "slug": "lopata-shtykovaya",
+    "description": "Прочная стальная лопата для перекопки почвы и посадки растений",
+    "price": "650.00",
+    "unit": "шт.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:18.157Z",
+    "updated_at": "2026-09-18T14:12:18.157Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 8,
+  "fields": {
+    "category": 7,
+    "name": "Грабли веерные",
+    "slug": "grabli-veernye",
+    "description": "Грабли для уборки листвы и рыхления почвы, 12 зубьев",
+    "price": "320.00",
+    "unit": "шт.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:18.159Z",
+    "updated_at": "2026-09-18T14:12:18.159Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 9,
+  "fields": {
+    "category": 8,
+    "name": "Триммер электрический",
+    "slug": "trimmer-elektricheskiy",
+    "description": "Электрический триммер для кошения травы, мощность 1000 Вт",
+    "price": "4500.00",
+    "unit": "шт.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:23.870Z",
+    "updated_at": "2026-09-18T14:12:23.870Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 10,
+  "fields": {
+    "category": 9,
+    "name": "Мотоблок Нева МБ-2",
+    "slug": "motoblok-neva-mb2",
+    "description": "Мотоблок с бензиновым двигателем для обработки участка до 20 соток",
+    "price": "32000.00",
+    "unit": "шт.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:29.539Z",
+    "updated_at": "2026-09-18T14:12:29.539Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 11,
+  "fields": {
+    "category": 10,
+    "name": "Капельная лента 100м",
+    "slug": "kapelnaya-lenta-100m",
+    "description": "Капельная лента для полива грядок и теплиц, длина 100 метров",
+    "price": "1200.00",
+    "unit": "рул.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:35.128Z",
+    "updated_at": "2026-09-18T14:12:35.128Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 12,
+  "fields": {
+    "category": 11,
+    "name": "Саженец яблони Антоновка",
+    "slug": "sazhencec-yabloni-antonovka",
+    "description": "Двухлетний саженец яблони сорта Антоновка, зимостойкий",
+    "price": "850.00",
+    "unit": "шт.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:41.637Z",
+    "updated_at": "2026-09-18T14:12:41.637Z"
+  }
+},
+{
+  "model": "catalog.product",
+  "pk": 13,
+  "fields": {
+    "category": 11,
+    "name": "Саженец смородины чёрной",
+    "slug": "sazhencec-smorodiny",
+    "description": "Двухлетний саженец чёрной смородины, урожайный сорт",
+    "price": "350.00",
+    "unit": "шт.",
+    "image": "",
+    "in_stock": true,
+    "created_at": "2026-09-18T14:12:41.638Z",
+    "updated_at": "2026-09-18T14:12:41.638Z"
+  }
 }
 ]

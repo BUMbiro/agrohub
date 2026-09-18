@@ -4,19 +4,17 @@ from .models import Product, Category, News, Contact
 
 
 def home(request):
-    """Главная страница: категории, новости + вывод 5 последних продуктов в консоль."""
-    categories = Category.objects.all()
+    """Главная страница: новости + вывод 5 последних продуктов в консоль."""
     news = News.objects.order_by('-date')[:6]
 
-    # --- Доп. задание: последние 5 созданных продуктов в консоль ---
+    # --- Доп. задание из прошлой домашки: 5 последних продуктов в консоль ---
     latest_products = Product.objects.order_by('-created_at')[:5]
     print('Последние 5 продуктов:')
     for p in latest_products:
         print(f'  - {p.name} ({p.price} ₽)')
-    # ---------------------------------------------------------------
+    # ----------------------------------------------------------------------
 
     return render(request, 'home.html', {
-        'categories': categories,
         'news': news,
     })
 
@@ -31,15 +29,14 @@ def category_detail(request, slug):
     })
 
 
-def product_detail(request, slug):
-    """Детальная страница товара."""
-    product = get_object_or_404(Product, slug=slug)
+def product_detail(request, pk):
+    """Детальная страница товара. Получает pk, извлекает объект через ORM."""
+    product = get_object_or_404(Product, pk=pk)
     return render(request, 'product_detail.html', {'product': product})
 
 
 def contacts(request):
     """Страница контактов: форма обратной связи + данные из модели Contact."""
-    # Берём первый контакт из БД (обычно он один)
     contact_info = Contact.objects.first()
 
     if request.method == 'POST':
