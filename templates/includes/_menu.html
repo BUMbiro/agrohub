@@ -1,0 +1,34 @@
+{# Подшаблон главного меню. Подключается в base.html через {% include %} #}
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'catalog:home' %}">🌾 АгроХаб</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'catalog:home' %}">Главная</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        Категории
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/category/semena/">🌾 Семена</a></li>
+                        <li><a class="dropdown-item" href="/category/udobreniya/">🌱 Удобрения</a></li>
+                        <li><a class="dropdown-item" href="/category/agrochemicals/">🧪 Агрохимикаты</a></li>
+                        <li><a class="dropdown-item" href="/category/garden_tools/">🔧 Инвентарь</a></li>
+                        <li><a class="dropdown-item" href="/category/power_tools/">⚡ Электроинструменты</a></li>
+                        <li><a class="dropdown-item" href="/category/mini_equipment/">🚜 Мини-техника</a></li>
+                        <li><a class="dropdown-item" href="/category/irrigation/">💧 Орошение</a></li>
+                        <li><a class="dropdown-item" href="/category/seedlings/">🌳 Саженцы</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'catalog:contacts' %}">Контакты</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

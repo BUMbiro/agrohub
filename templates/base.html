@@ -22,36 +22,32 @@
         .dropdown-menu { background: #1a3a2a; }
         .dropdown-item { color: #d4e8d4 !important; }
         .dropdown-item:hover { background: #2e7d32; color: #fff !important; }
+
+        /* Пагинация в цветах темы */
+        .pagination .page-link {
+            color: #1a3a2a;
+            border-color: #c8e6c9;
+        }
+        .pagination .page-link:hover {
+            background: #e8f5e9;
+            color: #1a3a2a;
+            border-color: #4caf50;
+        }
+        .pagination .page-item.active .page-link {
+            background: #4caf50;
+            border-color: #4caf50;
+            color: #fff;
+        }
+        .pagination .page-item.disabled .page-link {
+            color: #b0c8b0;
+            background: #f4f7f6;
+            border-color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">🌾 АгроХаб</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">Категории</a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/category/seeds/">Семена</a></li>
-                            <li><a class="dropdown-item" href="/category/fertilizers/">Удобрения</a></li>
-                            <li><a class="dropdown-item" href="/category/agrochemicals/">Агрохимикаты</a></li>
-                            <li><a class="dropdown-item" href="/category/garden_tools/">Инвентарь</a></li>
-                            <li><a class="dropdown-item" href="/category/power_tools/">Электроинструменты</a></li>
-                            <li><a class="dropdown-item" href="/category/mini_equipment/">Мини-техника</a></li>
-                            <li><a class="dropdown-item" href="/category/irrigation/">Орошение</a></li>
-                            <li><a class="dropdown-item" href="/category/seedlings/">Саженцы</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="/contacts/">Контакты</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    {# Подшаблон главного меню #}
+    {% include 'includes/_menu.html' %}
 
     <main class="container">
         {% if messages %}

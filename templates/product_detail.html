@@ -4,11 +4,58 @@
 
 {% block content %}
 <div class="card p-4">
-    <h2>{{ product.name }}</h2>
-    <p><strong>Категория:</strong> {{ product.category.name }}</p>
-    <p>{{ product.description }}</p>
-    <p><strong>Цена:</strong> {{ product.price }} ₽ / {{ product.unit }}</p>
-    <p>{% if product.in_stock %}В наличии{% else %}Нет в наличии{% endif %}</p>
-    <a href="/" class="btn btn-secondary">На главную</a>
+    <div class="row">
+        <div class="col-md-5 text-center mb-3">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 400px;">
+            {% else %}
+                {# Эмодзи: сначала по slug товара, потом по категории #}
+                <span style="font-size: 8rem;">
+                    {% if product.slug == 'tomat-cherri' %}🍅
+                    {% elif product.slug == 'ogurec-izyashchnyy' %}🥒
+                    {% elif product.slug == 'ammiachnaya-selitra' %}🧪
+                    {% elif product.slug == 'tyapka-sadovaya' %}🔨
+                    {% elif product.slug == 'lopata-shtykovaya' %}🔨
+                    {% elif product.slug == 'grabli-veernye' %}🧹
+                    {% elif product.slug == 'fitosporin-m' %}🧪
+                    {% elif product.slug == 'gerbicid-raundap' %}🧪
+                    {% elif product.slug == 'trimmer-elektricheskiy' %}⚡
+                    {% elif product.slug == 'motoblok-neva-mb2' %}🚜
+                    {% elif product.slug == 'kapelnaya-lenta-100m' %}💧
+                    {% elif product.slug == 'sazhencec-yabloni-antonovka' %}🍎
+                    {% elif product.slug == 'sazhencec-smorodiny' %}🍇
+                    {% elif product.category.slug == 'semena' %}🌾
+                    {% elif product.category.slug == 'udobreniya' %}🌱
+                    {% elif product.category.slug == 'instrumenty' %}🔧
+                    {% elif product.category.slug == 'agrochemicals' %}🧪
+                    {% elif product.category.slug == 'garden_tools' %}🧰
+                    {% elif product.category.slug == 'power_tools' %}⚡
+                    {% elif product.category.slug == 'mini_equipment' %}🚜
+                    {% elif product.category.slug == 'irrigation' %}💧
+                    {% elif product.category.slug == 'seedlings' %}🌳
+                    {% else %}📦
+                    {% endif %}
+                </span>
+            {% endif %}
+        </div>
+        <div class="col-md-7">
+            <h2>{{ product.name }}</h2>
+            <p><strong>Категория:</strong>
+                <a href="{% url 'catalog:category_detail' product.category.slug %}">
+                    {{ product.category.name }}
+                </a>
+            </p>
+            <p>{{ product.description }}</p>
+            <p class="fs-4"><strong>Цена:</strong> {{ product.price }} ₽ / {{ product.unit }}</p>
+            <p>
+                {% if product.in_stock %}
+                    <span class="badge bg-success">В наличии</span>
+                {% else %}
+                    <span class="badge bg-secondary">Нет в наличии</span>
+                {% endif %}
+            </p>
+            <a href="{% url 'catalog:home' %}" class="btn btn-secondary">← На главную</a>
+        </div>
+    </div>
 </div>
 {% endblock %}
