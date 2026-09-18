@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить товар{% endblock %}
+
+{% block content %}
+<h2 class="section-title">Добавить новый товар</h2>
+
+<div class="card p-4">
+    <form method="POST" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">{{ form.category.label }} *</label>
+            {{ form.category }}
+            {% if form.category.errors %}<div class="text-danger small">{{ form.category.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">{{ form.name.label }} *</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">{{ form.description.label }} *</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">{{ form.price.label }} *</label>
+                {{ form.price }}
+                {% if form.price.errors %}<div class="text-danger small">{{ form.price.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">{{ form.unit.label }} *</label>
+                {{ form.unit }}
+                {% if form.unit.errors %}<div class="text-danger small">{{ form.unit.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">{{ form.image.label }}</label>
+            {{ form.image }}
+            {% if form.image.errors %}<div class="text-danger small">{{ form.image.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3 form-check">
+            {{ form.in_stock }}
+            <label class="form-check-label">{{ form.in_stock.label }}</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Сохранить товар</button>
+        <a href="{% url 'catalog:home' %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %}
