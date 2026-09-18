@@ -4,8 +4,9 @@ from .models import Product, Category, News, Contact
 
 
 def home(request):
-    """Главная страница: новости + вывод 5 последних продуктов в консоль."""
+    """Главная страница: список товаров, новости + вывод 5 последних продуктов в консоль."""
     news = News.objects.order_by('-date')[:6]
+    products = Product.objects.all()   # лаконичный запрос — все товары
 
     # --- Доп. задание из прошлой домашки: 5 последних продуктов в консоль ---
     latest_products = Product.objects.order_by('-created_at')[:5]
@@ -16,6 +17,7 @@ def home(request):
 
     return render(request, 'home.html', {
         'news': news,
+        'products': products,
     })
 
 
