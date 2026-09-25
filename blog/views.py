@@ -1,4 +1,6 @@
 from django.urls import reverse_lazy
+from django.conf import settings
+from django.core.mail import send_mail
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView
 )
@@ -32,6 +34,24 @@ class BlogPostDetailView(DetailView):
         obj = super().get_object(queryset)
         obj.views += 1
         obj.save(update_fields=['views'])
+
+        # --- Доп. задание: при достижении 100 просмотров — поздравительное письмо ---
+        if obj.views == 100:
+            send_mail(
+                subject='🎉 Ваша статья достигла 100 просмотров!',
+                message=(
+                    f'Поздравляем!\n\n'
+                    f'Статья «{obj.title}» набрала 100 просмотров.\n'
+                    f'Продолжайте в том же духе!\n\n'
+                    f'— AgroHub'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.DEFAULT_FROM_EMAIL],
+                fail_silently=True,
+            )
+            print('📧 Поздравительное письмо отправлено (см. консоль выше)')
+        # --------------------------------------------------------------------------
+
         return obj
 
 
