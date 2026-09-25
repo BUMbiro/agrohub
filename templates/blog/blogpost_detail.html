@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="card p-4">
+            <h2>{{ post.title }}</h2>
+            <p class="text-muted">
+                {{ post.created_at|date:"d.m.Y H:i" }} · 👁 {{ post.views }} просмотров
+                {% if not post.is_published %}
+                    <span class="badge bg-warning text-dark">Черновик</span>
+                {% endif %}
+            </p>
+
+            {% if post.preview %}
+                <img src="{{ post.preview.url }}" class="img-fluid rounded mb-3" alt="{{ post.title }}">
+            {% endif %}
+
+            <div class="mb-4">
+                {{ post.content|linebreaks }}
+            </div>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'blog:blogpost_list' %}" class="btn btn-secondary">← К списку статей</a>
+                <a href="{% url 'blog:blogpost_update' post.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+                <a href="{% url 'blog:blogpost_delete' post.pk %}" class="btn btn-danger">🗑 Удалить</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
