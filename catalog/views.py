@@ -1,85 +1,103 @@
-from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.core.paginator import Paginator
+from django.contrib.messages.views import SuccessMessageMixin
 from django.utils.text import slugify
+from django.views.generic import ListView, DetailView, CreateView, TemplateView
+from django.urls import reverse_lazy
+from django.shortcuts import redirect
 
 from .models import Product, Category, News, Contact
 from .forms import ProductForm
 
 
-def home(request):
-    """Главная страница: список товаров (с пагинацией), новости + вывод 5 последних в консоль."""
-    news = News.objects.order_by('-date')[:6]
-    products_qs = Product.objects.all()
+class HomeView(ListView):
+    """Главная страница: список товаров с пагинацией + новости."""
 
-    # --- Пагинация: 6 товаров на страницу ---
-    paginator = Paginator(products_qs, 6)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    # -----------------------------------------
+    model = Product
+    template_name = 'home.html'
+    context_object_name = 'page_obj'      # сохраняем имя переменной для шаблона
+    paginate_by = 6                        # 6 товаров на страницу
 
-    # --- Доп. задание из прошлой домашки: 5 последних продуктов в консоль ---
-    latest_products = Product.objects.order_by('-created_at')[:5]
-    print('Последние 5 продуктов:')
-    for p in latest_products:
-        print(f'  - {p.name} ({p.price} ₽)')
-    # ----------------------------------------------------------------------
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    return render(request, 'home.html', {
-        'news': news,
-        'page_obj': page_obj,   # для пагинации
-    })
+        # Новости отдельным запросом
+        context['news'] = News.objects.order_by('-date')[:6]
+
+        # Доп. задание из первой домашки: 5 последних продуктов в консоль
+        latest_products = Product.objects.order_by('-created_at')[:5]
+        print('Последние 5 продуктов:')
+        for p in latest_products:
+            print(f'  - {p.name} ({p.price} ₽)')
+
+        return context
 
 
-def category_detail(request, slug):
+class CategoryDetailView(DetailView):
     """Страница категории с товарами."""
-    category = get_object_or_404(Category, slug=slug)
-    products = category.products.filter(in_stock=True)
-    return render(request, 'category_detail.html', {
-        'category': category,
-        'products': products,
-    })
+
+    model = Category
+    template_name = 'category_detail.html'
+    context_object_name = 'category'
+    slug_field = 'slug'
+    slug_url_kwarg = 'slug'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Добавляем товары этой категории (только в наличии)
+        context['products'] = self.object.products.filter(in_stock=True)
+        return context
 
 
-def product_detail(request, pk):
-    """Детальная страница товара. Получает pk, извлекает объект через ORM."""
-    product = get_object_or_404(Product, pk=pk)
-    return render(request, 'product_detail.html', {'product': product})
+class ProductDetailView(DetailView):
+    """Детальная страница товара. Работает по pk."""
+
+    model = Product
+    template_name = 'product_detail.html'
+    context_object_name = 'product'
 
 
-def product_create(request):
-    """Форма добавления нового товара. GET — показать, POST — валидировать и сохранить."""
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES)
-        if form.is_valid():
-            product = form.save(commit=False)
-            # Slug генерируется из name. Если такой slug уже есть — добавим суффикс с id
-            base_slug = slugify(product.name, allow_unicode=True)
-            slug = base_slug
-            counter = 1
-            while Product.objects.filter(slug=slug).exists():
-                counter += 1
-                slug = f'{base_slug}-{counter}'
-            product.slug = slug
-            product.save()
-            messages.success(request, f'Товар «{product.name}» добавлен!')
-            return redirect('catalog:product_detail', pk=product.pk)
-    else:
-        form = ProductForm()
+class ProductCreateView(SuccessMessageMixin, CreateView):
+    """Форма добавления товара. После сохранения — на страницу нового товара."""
 
-    return render(request, 'product_form.html', {'form': form})
+    model = Product
+    form_class = ProductForm
+    template_name = 'product_form.html'
+    success_message = 'Товар «%(name)s» добавлен!'
+
+    def form_valid(self, form):
+        """Генерируем slug из name перед сохранением."""
+        product = form.save(commit=False)
+        base_slug = slugify(product.name, allow_unicode=True)
+        slug = base_slug
+        counter = 1
+        while Product.objects.filter(slug=slug).exists():
+            counter += 1
+            slug = f'{base_slug}-{counter}'
+        product.slug = slug
+        product.save()
+        self.object = product
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        """Редирект на страницу нового товара."""
+        return reverse_lazy('catalog:product_detail', kwargs={'pk': self.object.pk})
 
 
-def contacts(request):
+class ContactsView(TemplateView):
     """Страница контактов: форма обратной связи + данные из модели Contact."""
-    contact_info = Contact.objects.first()
 
-    if request.method == 'POST':
+    template_name = 'contacts.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['contact_info'] = Contact.objects.first()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Обработка POST-запроса от формы обратной связи."""
         name = request.POST.get('name')
         email = request.POST.get('email')
         message = request.POST.get('message')
         print(f"Имя: {name}, Email: {email}, Сообщение: {message}")
         messages.success(request, 'Спасибо! Ваше сообщение отправлено.')
-        return render(request, 'contacts.html', {'contact_info': contact_info})
-
-    return render(request, 'contacts.html', {'contact_info': contact_info})
+        return redirect('catalog:contacts')
