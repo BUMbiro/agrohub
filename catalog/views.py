@@ -1,7 +1,9 @@
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.utils.text import slugify
-from django.views.generic import ListView, DetailView, CreateView, TemplateView
+from django.views.generic import (
+    ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
+)
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
 
@@ -14,8 +16,8 @@ class HomeView(ListView):
 
     model = Product
     template_name = 'home.html'
-    context_object_name = 'page_obj'      # сохраняем имя переменной для шаблона
-    paginate_by = 6                        # 6 товаров на страницу
+    context_object_name = 'page_obj'
+    paginate_by = 6
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -81,6 +83,27 @@ class ProductCreateView(SuccessMessageMixin, CreateView):
     def get_success_url(self):
         """Редирект на страницу нового товара."""
         return reverse_lazy('catalog:product_detail', kwargs={'pk': self.object.pk})
+
+
+class ProductUpdateView(UpdateView):
+    """Редактирование товара. После сохранения — на страницу товара."""
+
+    model = Product
+    form_class = ProductForm
+    template_name = 'product_form.html'
+
+    def get_success_url(self):
+        """Редирект на страницу отредактированного товара."""
+        return reverse_lazy('catalog:product_detail', kwargs={'pk': self.object.pk})
+
+
+class ProductDeleteView(DeleteView):
+    """Удаление товара с подтверждением."""
+
+    model = Product
+    template_name = 'product_confirm_delete.html'
+    context_object_name = 'product'
+    success_url = reverse_lazy('catalog:home')
 
 
 class ContactsView(TemplateView):

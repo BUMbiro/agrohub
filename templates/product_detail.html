@@ -54,7 +54,13 @@
                     <span class="badge bg-secondary">Нет в наличии</span>
                 {% endif %}
             </p>
-            <a href="{% url 'catalog:home' %}" class="btn btn-secondary">← На главную</a>
+
+            {# Кнопки: назад, редактировать, удалить #}
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'catalog:home' %}" class="btn btn-secondary">← На главную</a>
+                <a href="{% url 'catalog:product_update' product.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+                <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-danger">🗑 Удалить</a>
+            </div>
         </div>
     </div>
 </div>

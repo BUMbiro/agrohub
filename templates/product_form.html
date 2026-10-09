@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Добавить товар{% endblock %}
+{% block title %}{% if object %}Редактировать товар{% else %}Новый товар{% endif %}{% endblock %}
 
 {% block content %}
-<h2 class="section-title">Добавить новый товар</h2>
+<h2 class="section-title">
+    {% if object %}Редактировать товар{% else %}Добавить новый товар{% endif %}
+</h2>
 
 <div class="card p-4">
     <form method="POST" enctype="multipart/form-data" novalidate>
@@ -48,6 +50,7 @@
             <label class="form-label">{{ form.image.label }}</label>
             {{ form.image }}
             {% if form.image.errors %}<div class="text-danger small">{{ form.image.errors.0 }}</div>{% endif %}
+            {% if form.image.help_text %}<div class="form-text">{{ form.image.help_text }}</div>{% endif %}
         </div>
 
         <div class="mb-3 form-check">
@@ -55,8 +58,10 @@
             <label class="form-check-label">{{ form.in_stock.label }}</label>
         </div>
 
-        <button type="submit" class="btn btn-primary">Сохранить товар</button>
-        <a href="{% url 'catalog:home' %}" class="btn btn-secondary">Отмена</a>
+        <button type="submit" class="btn btn-primary">
+            {% if object %}Сохранить изменения{% else %}Сохранить товар{% endif %}
+        </button>
+        <a href="{% if object %}{% url 'catalog:product_detail' object.pk %}{% else %}{% url 'catalog:home' %}{% endif %}" class="btn btn-secondary">Отмена</a>
     </form>
 </div>
 {% endblock %}
