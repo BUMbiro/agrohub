@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.utils.text import slugify
 from django.views.generic import (
@@ -16,7 +17,6 @@ class HomeView(ListView):
 
     model = Product
     template_name = 'home.html'
-    context_object_name = 'page_obj'
     paginate_by = 6
 
     def get_context_data(self, **kwargs):
@@ -58,8 +58,8 @@ class ProductDetailView(DetailView):
     context_object_name = 'product'
 
 
-class ProductCreateView(SuccessMessageMixin, CreateView):
-    """Форма добавления товара. После сохранения — на страницу нового товара."""
+class ProductCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    """Форма добавления товара. Только для авторизованных."""
 
     model = Product
     form_class = ProductForm
@@ -85,8 +85,8 @@ class ProductCreateView(SuccessMessageMixin, CreateView):
         return reverse_lazy('catalog:product_detail', kwargs={'pk': self.object.pk})
 
 
-class ProductUpdateView(UpdateView):
-    """Редактирование товара. После сохранения — на страницу товара."""
+class ProductUpdateView(LoginRequiredMixin, UpdateView):
+    """Редактирование товара. Только для авторизованных."""
 
     model = Product
     form_class = ProductForm
@@ -97,8 +97,8 @@ class ProductUpdateView(UpdateView):
         return reverse_lazy('catalog:product_detail', kwargs={'pk': self.object.pk})
 
 
-class ProductDeleteView(DeleteView):
-    """Удаление товара с подтверждением."""
+class ProductDeleteView(LoginRequiredMixin, DeleteView):
+    """Удаление товара с подтверждением. Только для авторизованных."""
 
     model = Product
     template_name = 'product_confirm_delete.html'

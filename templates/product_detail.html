@@ -9,7 +9,6 @@
             {% if product.image %}
                 <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 400px;">
             {% else %}
-                {# Эмодзи: сначала по slug товара, потом по категории #}
                 <span style="font-size: 8rem;">
                     {% if product.slug == 'tomat-cherri' %}🍅
                     {% elif product.slug == 'ogurec-izyashchnyy' %}🥒
@@ -55,11 +54,12 @@
                 {% endif %}
             </p>
 
-            {# Кнопки: назад, редактировать, удалить #}
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{% url 'catalog:home' %}" class="btn btn-secondary">← На главную</a>
-                <a href="{% url 'catalog:product_update' product.pk %}" class="btn btn-primary">✏️ Редактировать</a>
-                <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-danger">🗑 Удалить</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'catalog:product_update' product.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+                    <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-danger">🗑 Удалить</a>
+                {% endif %}
             </div>
         </div>
     </div>

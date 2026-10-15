@@ -17,13 +17,13 @@ def _load_env_file(path):
             os.environ.setdefault(key.strip(), value.strip())
 
 
-# Загружаем переменные из .env (пароль БД, SECRET_KEY и т.п.)
+# Загружаем переменные из .env
 _load_env_file(BASE_DIR / '.env')
 
-# Секретный ключ из .env, fallback — только для локальной разработки
+# Секретный ключ из .env
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key')
 
-# DEBUG читаем из .env и превращаем строку в bool
+# DEBUG из .env
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = []
@@ -35,12 +35,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'catalog',
     'blog',
+    'catalog',
     'users',
 ]
-
-AUTH_USER_MODEL = 'users.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -73,7 +71,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Подключение к PostgreSQL. Все значения — из .env
+# PostgreSQL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -99,12 +97,18 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Медиа-файлы (изображения товаров)
+# Медиа
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Кастомная модель пользователя
+AUTH_USER_MODEL = 'users.User'
 
-# Email — заглушка: письма печатаются в консоль (не отправляются реально)
+# Email — заглушка в dev
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@agrohub.local'
+
+# Куда редиректить неавторизованных
+LOGIN_URL = 'users:login'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

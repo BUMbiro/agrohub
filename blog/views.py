@@ -1,5 +1,6 @@
 from django.urls import reverse_lazy
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import send_mail
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -35,7 +36,7 @@ class BlogPostDetailView(DetailView):
         obj.views += 1
         obj.save(update_fields=['views'])
 
-        # --- Доп. задание: при достижении 100 просмотров — поздравительное письмо ---
+        # При достижении 100 просмотров — поздравительное письмо
         if obj.views == 100:
             send_mail(
                 subject='🎉 Ваша статья достигла 100 просмотров!',
@@ -50,13 +51,12 @@ class BlogPostDetailView(DetailView):
                 fail_silently=True,
             )
             print('📧 Поздравительное письмо отправлено (см. консоль выше)')
-        # --------------------------------------------------------------------------
 
         return obj
 
 
-class BlogPostCreateView(CreateView):
-    """Создание статьи."""
+class BlogPostCreateView(LoginRequiredMixin, CreateView):
+    """Создание статьи. Только для авторизованных."""
 
     model = BlogPost
     form_class = BlogPostForm
@@ -64,8 +64,8 @@ class BlogPostCreateView(CreateView):
     success_url = reverse_lazy('blog:blogpost_list')
 
 
-class BlogPostUpdateView(UpdateView):
-    """Редактирование статьи. После сохранения — на страницу статьи."""
+class BlogPostUpdateView(LoginRequiredMixin, UpdateView):
+    """Редактирование статьи. Только для авторизованных."""
 
     model = BlogPost
     form_class = BlogPostForm
@@ -76,8 +76,8 @@ class BlogPostUpdateView(UpdateView):
         return reverse_lazy('blog:blogpost_detail', kwargs={'pk': self.object.pk})
 
 
-class BlogPostDeleteView(DeleteView):
-    """Удаление статьи."""
+class BlogPostDeleteView(LoginRequiredMixin, DeleteView):
+    """Удаление статьи. Только для авторизованных."""
 
     model = BlogPost
     template_name = 'blog/blogpost_confirm_delete.html'
