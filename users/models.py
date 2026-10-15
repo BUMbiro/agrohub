@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from .managers import UserManager
+
 
 class User(AbstractUser):
     """Кастомная модель пользователя.
@@ -32,7 +34,10 @@ class User(AbstractUser):
 
     # Авторизация по email, а не по username
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []            # email уже есть, username необязателен
+    REQUIRED_FIELDS = []
+
+    # Наш кастомный менеджер
+    objects = UserManager()
 
     class Meta:
         verbose_name = 'Пользователь'
