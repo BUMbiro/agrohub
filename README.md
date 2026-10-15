@@ -30,6 +30,13 @@
 Настроены списки, фильтры и поиск.
 - **Кастомная команда `load_test_data`** – очищает БД и загружает тестовые данные из фикстур.
 - **Динамическое меню категорий** – категории в меню берутся из БД через контекстный процессор.
+- **Аутентификация пользователей:**
+  - Кастомная модель `User(AbstractUser)` с авторизацией по email.
+  - Регистрация с подтверждением пароля и приветственным письмом.
+  - Вход по email и паролю, выход из аккаунта.
+  - Редактирование профиля: аватар, телефон, страна, имя, фамилия.
+- **Защита CRUD** — создание, редактирование и удаление товаров и статей блога доступны только авторизованным 
+пользователям. Просмотр — всем.
 - **Адаптивная вёрстка** на Bootstrap 5 с зелёной темой.
 
 ---
@@ -47,6 +54,9 @@
 - **django.forms** – формы, валидация и стилизация.
 - **CBV (Class-Based Views)** – контроллеры на классах (ListView, DetailView, CreateView, UpdateView, DeleteView).
 - **django.core.mail** – отправка писем (в dev-режиме — консольный backend).
+- **django.contrib.auth** – аутентификация и авторизация.
+- **AbstractUser + UserManager** – кастомная модель пользователя.
+- **LoginRequiredMixin** – защита контроллеров.
 
 ---
 
@@ -101,10 +111,17 @@ DB_PORT=5432
 ```bash
 python manage.py migrate
 ```
+
 ### 7. Создайте суперпользователя для доступа в админку:
+
 ```bash
 python manage.py createsuperuser
 ```
+>**Важно**: Django спросит Email (а не username), потому что в проекте используется кастомная модель
+>`User` с `USERNAME_FIELD = 'email'`.
+>Если `Django` предупредит «пароль слишком похож на `email`»,
+>в `dev`-режиме можно нажать y для продолжения.
+
 ### 8. Наполните базу тестовыми данными
 **Есть два способа.**
 
@@ -134,8 +151,23 @@ python manage.py runserver
 ## 📁 Структура проекта
 ```text
 agrohub/
+├── users/                                # Приложение пользователей
+│   ├── migrations/
+│   │   ├── __init__.py
+│   │   └── 0001_initial.py               # Миграция кастомной модели User
+│   ├── __init__.py
+│   ├── admin.py                          # Админка User (list_display, фильтры, поиск)
+│   ├── apps.py
+│   ├── forms.py                          # RegisterForm, LoginForm, ProfileForm
+│   ├── managers.py                       # UserManager (создание по email)
+│   ├── models.py                         # User (AbstractUser, USERNAME_FIELD='email')
+│   ├── tests.py
+│   ├── urls.py                           # register / login / logout / profile
+│   └── views.py                          # CBV для аутентификации
 ├── blog/                                 # Приложение блога
 │   ├── migrations/
+│   │   ├── __init__.py
+│   │   └── 0001_initial.py
 │   ├── __init__.py
 │   ├── admin.py
 │   ├── apps.py
@@ -146,10 +178,19 @@ agrohub/
 │   └── views.py                          # CBV для блога
 ├── catalog/                              # Приложение каталога
 │   ├── fixtures/                         # Фикстуры (categories.json, products.json)
+│   │   ├── .gitkeep
+│   │   ├── categories.json
+│   │   └── products.json
 │   ├── management/
+│   │   ├── __init__.py
 │   │   └── commands/
+│   │       ├── __init__.py
 │   │       └── load_test_data.py         # Кастомная команда
 │   ├── migrations/
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   ├── 0002_alter_category_options_alter_news_options_and_more.py
+│   │   └── 0003_contact.py
 │   ├── __init__.py
 │   ├── admin.py                          # Админка каталога
 │   ├── apps.py
@@ -162,17 +203,21 @@ agrohub/
 ├── config/                               # Настройки проекта
 │   ├── __init__.py
 │   ├── asgi.py
-│   ├── settings.py                       # PostgreSQL, .env, MEDIA, EMAIL
-│   ├── urls.py                           # include blog и catalog
+│   ├── settings.py                       # PostgreSQL, .env, MEDIA, EMAIL, AUTH_USER_MODEL
+│   ├── urls.py                           # include users, blog, catalog
 │   └── wsgi.py
 ├── templates/                            # Шаблоны HTML
+│   ├── users/                            # Шаблоны аутентификации
+│   │   ├── register.html
+│   │   ├── login.html
+│   │   └── profile.html
 │   ├── blog/                             # Шаблоны блога
 │   │   ├── blogpost_list.html
 │   │   ├── blogpost_detail.html
 │   │   ├── blogpost_form.html
 │   │   └── blogpost_confirm_delete.html
 │   ├── includes/
-│   │   └── _menu.html                    # Подшаблон главного меню
+│   │   └── _menu.html                    # Подшаблон главного меню (с блоком авторизации)
 │   ├── base.html                         # Базовый шаблон
 │   ├── home.html                         # Главная
 │   ├── category_detail.html              # Товары в категории
@@ -181,9 +226,12 @@ agrohub/
 │   ├── product_confirm_delete.html       # Подтверждение удаления товара
 │   └── contacts.html                     # Контакты
 ├── screenshots/                          # Скриншоты работы
+│   ├── .gitkeep
+│   └── ...png
 ├── media/                                # Загруженные файлы
 │   ├── blog/previews/                    # Превью статей
-│   └── products/                         # Изображения товаров
+│   ├── products/                         # Изображения товаров
+│   └── users/avatars/                    # Аватары пользователей
 ├── .env                                  # Переменные окружения (не в git)
 ├── .env.template                         # Шаблон .env
 ├── .gitignore                            # Игнорируемые файлы
@@ -197,20 +245,23 @@ agrohub/
 ## 🗄 Модели
 
 **Каталог**
-- `Category – name, slug, description.` Описывает категорию товаров.
 
+- `Category – name, slug, description.` Описывает категорию товаров.
 - `Product – category (FK → Category), name, slug, description, price, unit,
 image, in_stock, created_at, updated_at.` Товар в каталоге.
-
 - `News – title, content, date, image.` Новости фермеров на главной.
-
 - `Contact – name, address, phone, email.` Контактные данные магазина.
+
+**Пользователи**
+
+- `User (наследуется от AbstractUser) – email (USERNAME_FIELD), username, password, first_name, 
+last_name, avatar, phone_number, country, is_active, is_staff, date_joined.`
 
 **Блог**
 
-- BlogPost – title, content, preview, created_at, updated_at, is_published, views.
+- `BlogPost – title, content, preview, created_at, updated_at, is_published, views.` Статья блога.
 
-Для всех моделей заданы Meta (verbose_name, verbose_name_plural) и метод __str__.
+Для всех моделей заданы `Meta` (`verbose_name`, `verbose_name_plural`) и метод `__str__`.
 
 ---
 
@@ -244,6 +295,16 @@ image, in_stock, created_at, updated_at.` Товар в каталоге.
 
 - /blogs/<int:pk>/delete/ (имя blog:blogpost_delete) — удаление
 
+**Пользователи (users):**
+
+- /users/register/ (имя users:register) — регистрация
+
+- /users/login/ (имя users:login) — вход
+
+- /users/logout/ (имя users:logout) — выход
+
+- /users/profile/ (имя users:profile) — профиль (только для авторизованных)
+
 **Админка:**
 
 - /admin/ — админка Django
@@ -274,6 +335,13 @@ Slug генерируется автоматически из названия. 
 ### Формы блога (`/blogs/create/`, `/blogs/<pk>/update/`)
 Валидация: заголовок ≥ 3 символов. После редактирования — редирект на страницу статьи.
 
+### Формы аутентификации (`/users/register/`, `/users/login/`, `/users/profile/`)
+- **RegisterForm** — email + password1 + password2. Проверка уникальности email, автогенерация username.
+- **LoginForm** — email + password.
+- **ProfileForm** — first_name, last_name, email, avatar, phone_number, country. Проверка, что email не занят другим пользователем.
+
+Все поля стилизованы под Bootstrap. В формах пароля есть кнопка-глазик для показа пароля.
+
 ---
 
 ## ✅ Валидация формы товара
@@ -301,6 +369,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 При достижении статьёй 100 просмотров отправляется поздравительное письмо.
 
+После регистрации нового пользователя — приветственное письмо.
+
 ---
 
 ## 🧪 Тесты
@@ -314,13 +384,11 @@ python manage.py test
 
 ## 🛒 Управление через админку
 - Перейдите в админку: http://127.0.0.1:8000/admin/.
-
 - Войдите под созданным суперпользователем.
-
 - Добавляйте, редактируйте или удаляйте категории, товары, новости и контакты.
-
 - В списке продуктов доступны фильтр по категории и поиск по названию и описанию.
 - В статьях блога — фильтр по публикации, поиск, переключение публикации из списка.
+- В разделе **Users → Пользователи** — список с email, username, фильтр по статусу персонала и активности.
 
 ---
 
@@ -329,7 +397,7 @@ python manage.py test
 ### Крупные фичи
 - **Корзина покупок** – добавление товаров, изменение количества, удаление.
 - **Оформление заказов** – форма оформления, история заказов в личном кабинете.
-- **Авторизация и личный кабинет** – регистрация, вход, профиль, история заказов.
+- **Личный кабинет** – история заказов и покупок (авторизация уже реализована).
 
 ### Улучшения каталога
 - **Фильтры и сортировка на главной** – по категории, цене, дате, наличию.
@@ -355,9 +423,14 @@ python manage.py test
 
 ---
 
-## 👤 Об авторе
-Александр **(BUMbiro)** – студент курса **Python-разработки**.
-Проект создан в рамках домашнего задания по **Django**.
+## 👨‍🌾 Об авторе
+
+Александр **(BUMbiro)** – студент курса **Python-разработки**.  
+Проект создан в рамках домашних заданий по **Django** и развивается как портфолио.
+
+**Стек:** Django · PostgreSQL · Bootstrap 5 · Pillow · django.core.mail
+
+**Репозиторий:** https://github.com/BUMbiro/agrohub
 
 ---
 
