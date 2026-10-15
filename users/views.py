@@ -56,7 +56,10 @@ class LoginView(View):
         if request.user.is_authenticated:
             return redirect('catalog:home')
         form = LoginForm()
-        return render(request, self.template_name, {'form': form})
+        return render(request, self.template_name, {
+            'form': form,
+            'next': request.GET.get('next', ''),
+        })
 
     def post(self, request):
         """POST — проверить данные и залогинить."""
@@ -71,11 +74,19 @@ class LoginView(View):
             if user is not None:
                 login(request, user)
                 messages.success(request, f'С возвращением, {user.email}!')
+
+                # Редирект на ?next=, если он есть (куда юзер шёл до логина)
+                next_url = request.GET.get('next') or request.POST.get('next')
+                if next_url:
+                    return redirect(next_url)
                 return redirect('catalog:home')
             else:
                 form.add_error(None, 'Неверный email или пароль.')
 
-        return render(request, self.template_name, {'form': form})
+        return render(request, self.template_name, {
+            'form': form,
+            'next': request.GET.get('next', ''),
+        })
 
 
 class LogoutView(View):

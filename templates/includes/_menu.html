@@ -41,8 +41,13 @@
                 {# --- Блок авторизации --- #}
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown ms-lg-3">
-                        <a class="nav-link auth-btn auth-btn-user dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            👨‍🌾 {{ user.email }}
+                        <a class="nav-link auth-btn auth-btn-user dropdown-toggle d-inline-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" alt="Аватар" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;">
+                            {% else %}
+                                <span class="me-2">👨‍🌾</span>
+                            {% endif %}
+                            {{ user.email }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'users:profile' %}">Профиль</a></li>

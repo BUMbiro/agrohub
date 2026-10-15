@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from PIL import Image
 
 from .models import User
 
@@ -107,6 +108,41 @@ class ProfileForm(forms.ModelForm):
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+7 (999) 123-45-67'}),
             'country': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Россия'}),
         }
+
+    def clean_avatar(self):
+        """Проверяем формат и размер аватара (JPEG/PNG, до 5 МБ)."""
+        avatar = self.cleaned_data.get('avatar')
+
+        # Если поле пустое — пропускаем
+        if not avatar:
+            return avatar
+
+        # Если это уже существующий файл из БД — пропускаем
+        if not hasattr(avatar, 'content_type'):
+            return avatar
+
+        # Проверка размера
+        if avatar.size > 5 * 1024 * 1024:
+            raise forms.ValidationError(
+                f'Размер аватара не должен превышать 5 МБ. '
+                f'Ваш файл: {avatar.size / (1024 * 1024):.1f} МБ.'
+            )
+
+        # Проверка формата через Pillow
+        try:
+            img = Image.open(avatar)
+            img_format = img.format
+        except Exception:
+            raise forms.ValidationError('Не удалось прочитать изображение.')
+
+        if img_format not in ['JPEG', 'PNG']:
+            raise forms.ValidationError(
+                f'Недопустимый формат: {img_format}. Разрешены только JPEG и PNG.'
+            )
+
+        # Возвращаем указатель в начало
+        avatar.seek(0)
+        return avatar
 
     def clean_email(self):
         """Проверяем, что email не занят другим пользователем."""
