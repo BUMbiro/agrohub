@@ -7,11 +7,12 @@ from catalog.models import Category, Product
 class Command(BaseCommand):
     """Кастомная команда: очищает БД и загружает фикстуры Category и Product.
 
-    Дополнительно создаёт/обновляет группу «Модератор продуктов»,
-    чтобы после загрузки данных можно было сразу тестировать права.
+    Дополнительно создаёт/обновляет группы:
+    - «Модератор продуктов» — для товаров;
+    - «Контент-менеджер» — для блога.
     """
 
-    help = 'Удаляет старые данные, грузит фикстуры и создаёт группу модераторов'
+    help = 'Удаляет старые данные, грузит фикстуры и создаёт группы ролей'
 
     def handle(self, *args, **options):
         # 1. Очистка данных
@@ -28,9 +29,12 @@ class Command(BaseCommand):
         call_command('loaddata', 'categories.json', verbosity=0)
         call_command('loaddata', 'products.json', verbosity=0)
 
-        # 3. Создание/обновление группы модераторов
+        # 3. Создание/обновление групп ролей
         self.stdout.write('Создание группы модераторов...')
         call_command('create_moderator_group')
+
+        self.stdout.write('Создание группы контент-менеджеров...')
+        call_command('create_content_manager_group')
 
         # 4. Финальный отчёт
         self.stdout.write(self.style.SUCCESS(
