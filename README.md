@@ -24,7 +24,7 @@
 - **Блог** – раздел со статьями:
   - Список статей (только опубликованные, с пагинацией).
   - Детальная страница со счётчиком просмотров.
-  - Полный CRUD через веб-формы: создание, редактирование, удаление.
+  - CRUD через веб-формы: создание (авторизованные), редактирование/удаление — автор, контент-менеджер или суперюзер.
   - При достижении 100 просмотров — поздравительное письмо (консольный backend).
 - **Админка Django** – управление товарами, категориями, новостями, контактами и статьями блога. 
 Настроены списки, фильтры и поиск.
@@ -38,8 +38,24 @@
   - Валидация аватара: только JPEG или PNG, размер не более 5 МБ.
   - Аватар отображается в меню (или эмодзи 👨‍🌾, если не загружен).
   - Редирект после логина на страницу, куда пользователь шёл (`?next=`).
-- **Защита CRUD** — создание, редактирование и удаление товаров и статей блога доступны только авторизованным 
-пользователям. Просмотр — всем.
+- **Защита CRUD** — создание товаров и статей блога доступно авторизованным пользователям. Просмотр — всем.
+- **Владелец товара** — у каждого товара есть владелец (`owner`). Создатель автоматически становится владельцем.
+- **Права на управление товаром** — редактировать/удалять товар может **владелец**, **модератор продуктов** 
+(право `can_unpublish_product`) или суперюзер. Кнопки показываются по ролям.
+- **Модерация товаров** — новые товары создаются как черновики (`is_published=False`). Публикует/снимает 
+только модератор через кнопку «🧹 Снять с публикации» / «🌱 Опубликовать».
+- **Главная по ролям** — аноним и обычный юзер видят только опубликованные товары; модератор — все; 
+владелец — свои (включая черновики) + опубликованные чужие.
+- **Группа «Модератор продуктов»** — права `can_unpublish_product` + `delete_product`. Создаётся кастомной 
+командой `create_moderator_group`.
+- **Блог с автором и модерацией**
+  - У статьи есть автор (`author`), проставляется автоматически при создании.
+  - Новая статья создаётся как черновик (`is_published=False`).
+  - Редактировать/удалять статью может **автор**, **контент-менеджер** (право `can_unpublish_blogpost`) или суперюзер.
+  - Публикует/снимает только контент-менеджер через кнопку toggle.
+- **Группа «Контент-менеджер»** — права `can_unpublish_blogpost`, `change_blogpost`, `delete_blogpost`, 
+`add_blogpost`. Создаётся командой `create_content_manager_group`.
+- **Разделение ролей** — модератор продуктов **не может** управлять блогом, а контент-менеджер — товарами.
 - **Безопасность** — защита от Open Redirect через `url_has_allowed_host_and_scheme` при редиректах после логина.
 - **Адаптивная вёрстка** на Bootstrap 5 с зелёной темой.
 
@@ -61,8 +77,10 @@
 - **django.contrib.auth** – аутентификация и авторизация.
 - **AbstractUser + UserManager** – кастомная модель пользователя.
 - **LoginRequiredMixin** – защита контроллеров.
-- **django.test.TestCase** – unit-тесты (23 шт.).
+- **django.test.TestCase** – unit-тесты (49 шт.).
 - **url_has_allowed_host_and_scheme** – защита от `Open Redirect`.
+- **django.contrib.auth.models.Group, Permission** – роли и права (модератор продуктов, контент-менеджер).
+- **UserPassesTestMixin / кастомные миксины** – проверка прав на управление объектом.
 
 ---
 
@@ -131,12 +149,14 @@ python manage.py createsuperuser
 ### 8. Наполните базу тестовыми данными
 **Есть два способа.**
 
-**Способ А** — кастомная команда (рекомендуется):
+Способ А — кастомная команда (рекомендуется):
 
 ```bash
 python manage.py load_test_data
 ```
-Команда удалит старые данные и загрузит категории и продукты из фикстур `catalog/fixtures/`.
+
+Команда удалит старые данные, загрузит категории и продукты из фикстур `catalog/fixtures/`,
+а также создаст группы «Модератор продуктов» и «Контент-менеджер».
 
 **Способ Б** — вручную через loaddata:
 
@@ -144,6 +164,14 @@ python manage.py load_test_data
 python manage.py loaddata catalog/fixtures/categories.json
 python manage.py loaddata catalog/fixtures/products.json
 ```
+
+### 8.1. Создайте группы ролей (если не использовали load_test_data)
+
+```bash
+python manage.py create_moderator_group         # Модератор продуктов
+python manage.py create_content_manager_group   # Контент-менеджер
+```
+
 ### 9. Запустите сервер:
 ```bash
 python manage.py runserver
@@ -165,47 +193,53 @@ agrohub/
 │   ├── admin.py                          # Админка User (list_display, фильтры, поиск)
 │   ├── apps.py
 │   ├── forms.py                          # RegisterForm, LoginForm, ProfileForm
-│   ├── managers.py                       # UserManager (создание по email)
-│   ├── models.py                         # User (AbstractUser, USERNAME_FIELD='email')
-│   ├── tests.py
+│   ├── managers.py                       # UserManager (создание по email, автоген username)
+│   ├── models.py                         # User (AbstractUser, USERNAME_FIELD='email', property is_moderator)
+│   ├── tests.py                          # 12 тестов (регистрация, логин, профиль, logout)
 │   ├── urls.py                           # register / login / logout / profile
 │   └── views.py                          # CBV для аутентификации
 ├── blog/                                 # Приложение блога
 │   ├── migrations/
 │   │   ├── __init__.py
-│   │   └── 0001_initial.py
+│   │   ├── 0001_initial.py
+│   │   ├── 0002_alter_blogpost_options_blogpost_author_and_more.py
+│   │   └── 0003_publish_existing_blogposts.py
 │   ├── __init__.py
-│   ├── admin.py
+│   ├── admin.py                          # Админка BlogPost (author, is_published, автокомплит)
 │   ├── apps.py
-│   ├── forms.py                          # Форма статьи блога
-│   ├── models.py                         # Модель BlogPost
-│   ├── tests.py
-│   ├── urls.py                           # Маршруты блога
-│   └── views.py                          # CBV для блога
+│   ├── forms.py                          # BlogPostForm (без is_published)
+│   ├── models.py                         # BlogPost (author FK, permissions, хелперы прав)
+│   ├── tests.py                          # 19 тестов (права автора/контент-менеджера, фильтр)
+│   ├── urls.py                           # Маршруты блога (включая toggle-publish)
+│   └── views.py                          # CBV блога + toggle публикации
 ├── catalog/                              # Приложение каталога
-│   ├── fixtures/                         # Фикстуры (categories.json, products.json)
+│   ├── fixtures/                         # Фикстуры
 │   │   ├── .gitkeep
-│   │   ├── categories.json
-│   │   └── products.json
+│   │   ├── categories.json               # 9 категорий
+│   │   └── products.json                 # 12 товаров (is_published=true)
 │   ├── management/
 │   │   ├── __init__.py
 │   │   └── commands/
 │   │       ├── __init__.py
-│   │       └── load_test_data.py         # Кастомная команда
+│   │       ├── create_moderator_group.py         # Группа «Модератор продуктов»
+│   │       ├── create_content_manager_group.py   # Группа «Контент-менеджер»
+│   │       └── load_test_data.py                 # Кастомная команда загрузки данных
 │   ├── migrations/
 │   │   ├── __init__.py
 │   │   ├── 0001_initial.py
 │   │   ├── 0002_alter_category_options_alter_news_options_and_more.py
-│   │   └── 0003_contact.py
+│   │   ├── 0003_contact.py
+│   │   ├── 0004_alter_product_options_product_is_published_and_more.py
+│   │   └── 0005_publish_existing_products.py
 │   ├── __init__.py
-│   ├── admin.py                          # Админка каталога
+│   ├── admin.py                          # Админка каталога (owner, is_published)
 │   ├── apps.py
 │   ├── context_processors.py             # Категории во все шаблоны
 │   ├── forms.py                          # ProductForm с валидацией
-│   ├── models.py                         # Category, Product, News, Contact
-│   ├── tests.py
-│   ├── urls.py
-│   └── views.py                          # CBV для каталога
+│   ├── models.py                         # Category, Product (owner, permissions), News, Contact
+│   ├── tests.py                          # 17 тестов (owner, права владельца/модератора, фильтр)
+│   ├── urls.py                           # Маршруты каталога (включая toggle-publish)
+│   └── views.py                          # CBV каталога + toggle публикации
 ├── config/                               # Настройки проекта
 │   ├── __init__.py
 │   ├── asgi.py
@@ -218,16 +252,16 @@ agrohub/
 │   │   ├── login.html
 │   │   └── profile.html
 │   ├── blog/                             # Шаблоны блога
-│   │   ├── blogpost_list.html
-│   │   ├── blogpost_detail.html
+│   │   ├── blogpost_list.html            # + бейдж «Черновик» по ролям
+│   │   ├── blogpost_detail.html          # + кнопки по ролям + toggle публикации
 │   │   ├── blogpost_form.html
 │   │   └── blogpost_confirm_delete.html
 │   ├── includes/
 │   │   └── _menu.html                    # Подшаблон главного меню (с блоком авторизации)
 │   ├── base.html                         # Базовый шаблон
-│   ├── home.html                         # Главная
+│   ├── home.html                         # Главная (фильтр по ролям + бейдж «Черновик»)
 │   ├── category_detail.html              # Товары в категории
-│   ├── product_detail.html               # Детальная страница товара
+│   ├── product_detail.html               # Детальная страница (кнопки по ролям + toggle)
 │   ├── product_form.html                 # Форма создания/редактирования
 │   ├── product_confirm_delete.html       # Подтверждение удаления товара
 │   └── contacts.html                     # Контакты
@@ -253,8 +287,10 @@ agrohub/
 **Каталог**
 
 - `Category – name, slug, description.` Описывает категорию товаров.
-- `Product – category (FK → Category), name, slug, description, price, unit,
-image, in_stock, created_at, updated_at.` Товар в каталоге.
+- `Product – category (FK → Category), owner (FK → User), name, slug, description, price, unit,
+image, in_stock, is_published, created_at, updated_at.` Товар в каталоге.
+  - `Meta.permissions` содержит кастомное право `can_unpublish_product`.
+  - Методы `can_be_managed_by(user)` и `can_be_unpublished_by(user)` — хелперы прав.
 - `News – title, content, date, image.` Новости фермеров на главной.
 - `Contact – name, address, phone, email.` Контактные данные магазина.
 
@@ -262,10 +298,14 @@ image, in_stock, created_at, updated_at.` Товар в каталоге.
 
 - `User (наследуется от AbstractUser) – email (USERNAME_FIELD), username, password, first_name, 
 last_name, avatar, phone_number, country, is_active, is_staff, date_joined.`
+  - Property `is_moderator` — проверка права `can_unpublish_product` (удобно для шаблонов).
+  - Property `is_content_manager` — проверка прав на блог (удобно для шаблонов).
 
 **Блог**
 
-- `BlogPost – title, content, preview, created_at, updated_at, is_published, views.` Статья блога.
+- `BlogPost – author (FK → User), title, content, preview, created_at, updated_at, is_published, views.` Статья блога.
+  - `Meta.permissions` содержит кастомное право `can_unpublish_blogpost`.
+  - Методы `can_be_managed_by(user)` и `can_be_unpublished_by(user)` — хелперы прав.
 
 Для всех моделей заданы `Meta` (`verbose_name`, `verbose_name_plural`) и метод `__str__`.
 
@@ -281,6 +321,7 @@ last_name, avatar, phone_number, country, is_active, is_staff, date_joined.`
 - /products/<int:pk>/ (имя catalog:product_detail) — детальная страница товара
 - /products/<int:pk>/update/ (имя catalog:product_update) — редактирование товара
 - /products/<int:pk>/delete/ (имя catalog:product_delete) — удаление товара
+- /products/<int:pk>/toggle-publish/ (имя catalog:product_toggle_publish) — снять/опубликовать товар (только модератор)
 - /contacts/ (имя catalog:contacts) — контакты
 
 **Блог (blog):**
@@ -290,6 +331,8 @@ last_name, avatar, phone_number, country, is_active, is_staff, date_joined.`
 - /blogs/<int:pk>/ (имя blog:blogpost_detail) — детальная страница статьи
 - /blogs/<int:pk>/update/ (имя blog:blogpost_update) — редактирование
 - /blogs/<int:pk>/delete/ (имя blog:blogpost_delete) — удаление
+- /blogs/<int:pk>/toggle-publish/ (имя blog:blogpost_toggle_publish) — снять/опубликовать статью 
+(только контент-менеджер)
 
 **Пользователи (users):**
 
@@ -326,7 +369,10 @@ Slug генерируется автоматически из названия. 
 после редактирования — на страницу отредактированного.
 
 ### Формы блога (`/blogs/create/`, `/blogs/<pk>/update/`)
-Валидация: заголовок ≥ 3 символов. После редактирования — редирект на страницу статьи.
+Одна форма для создания и редактирования. Поля: заголовок, содержимое, превью.
+Валидация: заголовок ≥ 3 символов.
+Новая статья создаётся как черновик (`is_published=False`) — публикует контент-менеджер.
+После редактирования — редирект на страницу статьи.
 
 ### Формы аутентификации (`/users/register/`, `/users/login/`, `/users/profile/`)
 - **RegisterForm** — email + password1 + password2. Проверка уникальности email, автогенерация username.
@@ -369,13 +415,24 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 ---
 
 ## 🧪 Тесты
-В проекте 23 unit-теста `(django.test.TestCase)`:
+В проекте 49 unit-тестов (django.test.TestCase):
 
-- `users` — регистрация (5), логин (3), редактирование профиля (3), logout (1)
+- **users** — регистрация (5), логин (3), редактирование профиля (3), logout (1) — 12 тестов.
+- **catalog** — защита CRUD от анонимов (5), привязка owner при создании (1), права владельца/модератора/чужого (8),
+фильтр главной по ролям (3) — 17 тестов.
+- **blog** — защита CRUD от анонимов (5), счётчик просмотров (1), привязка author при создании (1),
+права автора/контент-менеджера/чужого (9), фильтр списка по ролям (3) — 19 тестов.
 
-- `catalog` — защита CRUD товаров от анонимных пользователей (5)
+**Покрыты сценарии:**
 
-- `blog` — защита CRUD статей + счётчик просмотров (6)
+- owner автоматически проставляется при создании товара;
+- автор автоматически проставляется при создании статьи;
+- обычный юзер не может править/удалять чужой объект (403);
+- владелец/автор может править/удалять свой;
+- модератор/контент-менеджер может править/удалять любой;
+- toggle публикации доступен только модератору/контент-менеджеру;
+- аноним видит только опубликованные;
+- владелец/автор видит свои черновики.
 
 **Для запуска:**
 
@@ -383,7 +440,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 python manage.py test
 ```
 
-Все тесты должны пройти со статусом OK.
+Все тесты должны пройти со статусом **OK**.
 
 ---
 
@@ -391,8 +448,11 @@ python manage.py test
 - Перейдите в админку: http://127.0.0.1:8000/admin/.
 - Войдите под созданным суперпользователем.
 - Добавляйте, редактируйте или удаляйте категории, товары, новости и контакты.
-- В списке продуктов доступны фильтр по категории и поиск по названию и описанию.
-- В статьях блога — фильтр по публикации, поиск, переключение публикации из списка.
+- В списке продуктов — колонки владельца и статуса публикации, фильтр по категории и статусу, поиск по названию
+и описанию, переключение публикации прямо из списка.
+- В статьях блога — колонка автора, фильтр по публикации и автору, поиск, переключение публикации из списка,
+автокомплит по автору.
+- В разделе «Группы» — группы «Модератор продуктов» и «Контент-менеджер» с назначенными правами.
 - В разделе **Users → Пользователи** — список с email, username, фильтр по статусу персонала и активности.
 
 ---
@@ -418,8 +478,9 @@ python manage.py test
 
 ### Технические улучшения
 - **Оптимизация запросов** – `select_related` и `prefetch_related` для пагинации и связей.
-- **Расширение покрытия тестами** – добавление тестов на формы, модели, дополнительные сценарии (сейчас 23 теста).
+- **Расширение покрытия тестами** – добавление тестов на формы, модели, дополнительные сценарии (сейчас 49 тестов).
 - **Реальные SMTP-настройки** – для отправки писем в продакшене.
+- **Кастомная страница 403** – сейчас при отсутствии прав отдаётся стандартная страница Django.
 
 ### Инфраструктура
 - **Docker** – контейнеризация проекта для быстрого развёртывания.
