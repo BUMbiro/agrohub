@@ -40,6 +40,7 @@
   - Редирект после логина на страницу, куда пользователь шёл (`?next=`).
 - **Защита CRUD** — создание, редактирование и удаление товаров и статей блога доступны только авторизованным 
 пользователям. Просмотр — всем.
+- **Безопасность** — защита от Open Redirect через `url_has_allowed_host_and_scheme` при редиректах после логина.
 - **Адаптивная вёрстка** на Bootstrap 5 с зелёной темой.
 
 ---
@@ -60,6 +61,8 @@
 - **django.contrib.auth** – аутентификация и авторизация.
 - **AbstractUser + UserManager** – кастомная модель пользователя.
 - **LoginRequiredMixin** – защита контроллеров.
+- **django.test.TestCase** – unit-тесты (23 шт.).
+- **url_has_allowed_host_and_scheme** – защита от `Open Redirect`.
 
 ---
 
@@ -273,39 +276,26 @@ last_name, avatar, phone_number, country, is_active, is_staff, date_joined.`
 **Каталог (catalog):**
 
 - / (имя catalog:home) — главная: товары с пагинацией + новости
-
 - /category/<slug>/ (имя catalog:category_detail) — товары в категории
-
 - /products/create/ (имя catalog:product_create) — форма добавления товара
-
 - /products/<int:pk>/ (имя catalog:product_detail) — детальная страница товара
-
 - /products/<int:pk>/update/ (имя catalog:product_update) — редактирование товара
-
 - /products/<int:pk>/delete/ (имя catalog:product_delete) — удаление товара
-
 - /contacts/ (имя catalog:contacts) — контакты
 
 **Блог (blog):**
 
 - /blogs/ (имя blog:blogpost_list) — список статей
-
 - /blogs/create/ (имя blog:blogpost_create) — создание статьи
-
 - /blogs/<int:pk>/ (имя blog:blogpost_detail) — детальная страница статьи
-
 - /blogs/<int:pk>/update/ (имя blog:blogpost_update) — редактирование
-
 - /blogs/<int:pk>/delete/ (имя blog:blogpost_delete) — удаление
 
 **Пользователи (users):**
 
 - /users/register/ (имя users:register) — регистрация
-
 - /users/login/ (имя users:login) — вход
-
 - /users/logout/ (имя users:logout) — выход
-
 - /users/profile/ (имя users:profile) — профиль (только для авторизованных)
 
 **Админка:**
@@ -379,11 +369,21 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 ---
 
 ## 🧪 Тесты
-Для запуска тестов выполните:
+В проекте 23 unit-теста `(django.test.TestCase)`:
+
+- `users` — регистрация (5), логин (3), редактирование профиля (3), logout (1)
+
+- `catalog` — защита CRUD товаров от анонимных пользователей (5)
+
+- `blog` — защита CRUD статей + счётчик просмотров (6)
+
+**Для запуска:**
 
 ```bash
 python manage.py test
 ```
+
+Все тесты должны пройти со статусом OK.
 
 ---
 
@@ -418,7 +418,7 @@ python manage.py test
 
 ### Технические улучшения
 - **Оптимизация запросов** – `select_related` и `prefetch_related` для пагинации и связей.
-- **Unit-тесты** – покрытие основных сценариев (модели, views, формы).
+- **Расширение покрытия тестами** – добавление тестов на формы, модели, дополнительные сценарии (сейчас 23 теста).
 - **Реальные SMTP-настройки** – для отправки писем в продакшене.
 
 ### Инфраструктура
