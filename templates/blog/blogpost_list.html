@@ -15,7 +15,15 @@
 <div class="row mt-4">
     {% for post in posts %}
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card h-100 position-relative">
+
+                {# Бейдж «Черновик» — только для автора/контент-менеджера #}
+                {% if not post.is_published and user.is_authenticated %}
+                    {% if post.author == user or user.is_content_manager or user.is_superuser %}
+                        <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">📝 Черновик</span>
+                    {% endif %}
+                {% endif %}
+
                 {% if post.preview %}
                     <img src="{{ post.preview.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
                 {% endif %}
@@ -23,6 +31,9 @@
                     <h5 class="card-title">{{ post.title }}</h5>
                     <p class="text-muted small">
                         {{ post.created_at|date:"d.m.Y H:i" }} · 👁 {{ post.views }}
+                        {% if post.author %}
+                            · ✍️ {{ post.author.email }}
+                        {% endif %}
                     </p>
                     <p class="card-text">{{ post.content|truncatechars:100 }}</p>
                     <a href="{% url 'blog:blogpost_detail' post.pk %}" class="btn btn-primary btn-sm">Читать</a>
