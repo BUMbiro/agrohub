@@ -23,7 +23,7 @@ class ProductPermissionMixin:
 
     Проверяет, что пользователь может управлять объектом:
     - владелец товара;
-    - модератор (can_unpublish_product);
+    - модератор (право can_unpublish_product);
     - суперюзер.
 
     Если прав нет — отдаём 403.
@@ -72,7 +72,7 @@ class HomeView(ListView):
             return qs.filter(is_published=True)
 
         # Модератор (или суперюзер) — видит всё
-        if user.is_superuser or user.has_perm('catalog.can_unpublish_product'):
+        if user.is_superuser or user.is_moderator:
             return qs
 
         # Владелец — свои товары (любые) + опубликованные чужие

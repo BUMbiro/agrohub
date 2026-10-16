@@ -39,6 +39,16 @@
         </div>
         <div class="col-md-7">
             <h2>{{ product.name }}</h2>
+
+            {# Бейдж «Не опубликован» — виден владельцу и модератору #}
+            {% if not product.is_published %}
+                {% if user.is_authenticated %}
+                    {% if product.owner == user or user.is_moderator or user.is_superuser %}
+                        <p><span class="badge bg-warning text-dark">⏳ Не опубликован</span></p>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+
             <p><strong>Категория:</strong>
                 <a href="{% url 'catalog:category_detail' product.category.slug %}">
                     {{ product.category.name }}
@@ -54,14 +64,65 @@
                 {% endif %}
             </p>
 
+            {# Владелец товара — показываем авторизованным #}
+            {% if user.is_authenticated and product.owner %}
+                <p class="text-muted small">
+                    <strong>Владелец:</strong> {{ product.owner.email }}
+                </p>
+            {% endif %}
+
+            {# Блок кнопок управления #}
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{% url 'catalog:home' %}" class="btn btn-secondary">← На главную</a>
+
                 {% if user.is_authenticated %}
-                    <a href="{% url 'catalog:product_update' product.pk %}" class="btn btn-primary">✏️ Редактировать</a>
-                    <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-danger">🗑 Удалить</a>
+                    {# Кнопки «Редактировать» и «Удалить» — владельцу или модератору #}
+                    {% if product.owner == user or user.is_moderator or user.is_superuser %}
+                        <a href="{% url 'catalog:product_update' product.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+                        <a href="{% url 'catalog:product_delete' product.pk %}" class="btn btn-danger">🗑 Удалить</a>
+                    {% endif %}
+
+                    {# Кнопка toggle публикации — только модератору и суперюзеру #}
+                    {% if user.is_moderator or user.is_superuser %}
+                        <form method="post" action="{% url 'catalog:product_toggle_publish' product.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            {% if product.is_published %}
+                                <button type="submit" class="btn btn-toggle-unpublish">🧹 Снять с публикации</button>
+                            {% else %}
+                                <button type="submit" class="btn btn-toggle-publish">🌱 Опубликовать</button>
+                            {% endif %}
+                        </form>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+{# Кастомные стили для кнопок toggle — тёмно-зелёный фон, золото при наведении #}
+<style>
+    .btn-toggle-unpublish {
+        background-color: #1b4332;   /* тёмно-зелёный фон */
+        color: #fff;                 /* белый текст */
+        border: 1px solid #d4a017;   /* золотая рамка */
+        transition: all 0.2s ease;
+    }
+    .btn-toggle-unpublish:hover {
+        background-color: #d4a017;   /* золотой фон при наведении */
+        color: #000;                 /* чёрный текст */
+        border-color: #1b4332;
+    }
+
+    .btn-toggle-publish {
+        background-color: #1b4332;
+        color: #fff;
+        border: 1px solid #2d6a4f;
+        transition: all 0.2s ease;
+    }
+    .btn-toggle-publish:hover {
+        background-color: #d4a017;
+        color: #000;
+        border-color: #1b4332;
+    }
+</style>
 {% endblock %}

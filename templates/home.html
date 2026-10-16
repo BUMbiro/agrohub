@@ -22,7 +22,15 @@
     {% for product in object_list %}
         <div class="col-md-4 mb-4">
             <div class="card h-100 text-center p-3">
-                <div class="card-body">
+                <div class="card-body position-relative">
+
+                    {# Бейдж «Не опубликован» — только для модератора/владельца #}
+                    {% if not product.is_published and user.is_authenticated %}
+                        {% if product.owner == user or user.is_moderator or user.is_superuser %}
+                            <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">⏳ Не опубликован</span>
+                        {% endif %}
+                    {% endif %}
+
                     {% if product.image %}
                         <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded mb-2" style="max-height: 120px;">
                     {% else %}
