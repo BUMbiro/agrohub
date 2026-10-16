@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import Category, Product, News, Contact
 
 
@@ -13,13 +14,18 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    """Админка продуктов: id, name, price, category + фильтр и поиск."""
+    """Админка продуктов.
 
-    list_display = ('id', 'name', 'price', 'category')   # колонки
-    list_filter = ('category',)                          # фильтр справа по категории
-    search_fields = ('name', 'description')              # поиск по имени и описанию
-    list_select_related = ('category',)                  # оптимизация: подтягиваем категорию одним запросом
-    prepopulated_fields = {'slug': ('name',)}            # slug автозаполняется из name
+    Показывает владельца и статус публикации, даёт фильтр по статусу
+    и позволяет переключать is_published прямо из списка.
+    """
+
+    list_display = ('id', 'name', 'price', 'category', 'owner', 'is_published')
+    list_filter = ('category', 'is_published')            # фильтры справа
+    list_editable = ('is_published',)                     # переключение прямо в списке
+    search_fields = ('name', 'description')               # поиск по имени и описанию
+    list_select_related = ('category', 'owner')           # оптимизация запросов
+    prepopulated_fields = {'slug': ('name',)}             # slug автозаполняется из name
 
 
 @admin.register(News)
