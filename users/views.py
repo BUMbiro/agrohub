@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import send_mail
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import CreateView, UpdateView, View
 
 from .forms import RegisterForm, LoginForm, ProfileForm
@@ -51,10 +52,28 @@ class LoginView(View):
 
     template_name = 'users/login.html'
 
+    def _get_safe_redirect_url(self, request):
+        """Возвращает безопасный URL для редиректа после логина.
+
+        Проверяет параметр ?next= — он должен вести на наш сайт (не на чужой).
+        Защита от Open Redirect.
+        """
+        next_url = request.POST.get('next') or request.GET.get('next')
+
+        if next_url and url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return next_url
+
+        return None
+
     def get(self, request):
         """GET — показать форму."""
         if request.user.is_authenticated:
             return redirect('catalog:home')
+
         form = LoginForm()
         return render(request, self.template_name, {
             'form': form,
@@ -75,11 +94,10 @@ class LoginView(View):
                 login(request, user)
                 messages.success(request, f'С возвращением, {user.email}!')
 
-                # Редирект на ?next=, если он есть (куда юзер шёл до логина)
-                next_url = request.GET.get('next') or request.POST.get('next')
-                if next_url:
-                    return redirect(next_url)
-                return redirect('catalog:home')
+                # Безопасный редирект: на next (если он наш) или на главную
+                safe_url = self._get_safe_redirect_url(request)
+                return redirect(safe_url or 'catalog:home')
+
             else:
                 form.add_error(None, 'Неверный email или пароль.')
 
