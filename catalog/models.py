@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -27,13 +28,26 @@ class Category(models.Model):
 
 
 class Product(models.Model):
-    """Товар в каталоге. Привязан к категории через ForeignKey."""
+    """Товар в каталоге.
+
+    Привязан к категории и к пользователю-владельцу (owner).
+    Имеет статус публикации (is_published) и кастомное право
+    can_unpublish_product для модераторов.
+    """
 
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,     # при удалении категории удаляются её товары
         related_name='products',      # category.products.all() — все товары категории
         verbose_name='Категория',
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,    # если юзера удалили — товар остаётся, owner=None
+        null=True,                    # null=True, чтобы миграция не падала на существующих товарах
+        blank=True,
+        related_name='products',      # user.products.all() — товары пользователя
+        verbose_name='Владелец',
     )
     name = models.CharField(
         max_length=200,
@@ -67,6 +81,10 @@ class Product(models.Model):
         default=True,
         verbose_name='В наличии',
     )
+    is_published = models.BooleanField(
+        default=False,                # по критерию: default = «не опубликован»
+        verbose_name='Опубликован',
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,            # ставится один раз при создании
         verbose_name='Дата создания',
@@ -80,9 +98,45 @@ class Product(models.Model):
         verbose_name = 'Продукт'
         verbose_name_plural = 'Продукты'
         ordering = ['-created_at']    # новые сверху
+        permissions = [
+            # Кастомное право для модераторов: снимать товар с публикации
+            ('can_unpublish_product', 'Может отменять публикацию продукта'),
+        ]
 
     def __str__(self):
         return self.name
+
+    # --------------------------------------------------------
+    # Хелперы прав доступа
+    # --------------------------------------------------------
+
+    def can_be_managed_by(self, user):
+        """Может ли пользователь редактировать/удалять этот товар.
+
+        Доступ разрешён:
+        - владельцу товара;
+        - модератору (у кого есть право can_unpublish_product);
+        - суперпользователю.
+        """
+        if not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        if self.owner_id == user.id:                  # владелец товара
+            return True
+        return user.has_perm('catalog.can_unpublish_product')  # модератор
+
+    def can_be_unpublished_by(self, user):
+        """Может ли пользователь менять статус публикации товара.
+
+        Только модератор или суперюзер. Владелец сам публиковать не может —
+        в этом и смысл ручной модерации.
+        """
+        if not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        return user.has_perm('catalog.can_unpublish_product')
 
 
 class News(models.Model):
