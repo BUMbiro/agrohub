@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
@@ -87,9 +88,6 @@ class CategoryDetailView(DetailView):
 
     Товары берём через сервис get_products_by_category — он кэширует
     результат в Redis по ключу `category_{id}` с TTL 300 секунд.
-
-    В шаблоне products — это список словарей (не QuerySet),
-    поэтому поля доступны как product.name, product.image_url и т.д.
     """
 
     model = Category
@@ -100,7 +98,6 @@ class CategoryDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Сервис вернёт список словарей из кэша (или БД, если кэш пуст)
         context['products'] = get_products_by_category(self.object.id)
         return context
 
@@ -112,39 +109,61 @@ class CategoryDetailView(DetailView):
 class ProductDetailView(DetailView):
     """Детальная страница товара. Общедоступна, но черновики — только своим.
 
-    Логика queryset:
-    - аноним и обычный юзер — только опубликованные товары;
-    - модератор и суперюзер — все;
-    - владелец — свои (включая черновики) + опубликованные чужие.
+    Логика:
+    - аноним и обычный юзер — только опубликованные (кэшируются);
+    - модератор и суперюзер — все (без кэша);
+    - владелец — свои (включая черновики) + опубликованные чужие (без кэша).
 
-    Чужой черновик по прямой ссылке → 404 (объект «не существует»).
+    Чужой черновик по прямой ссылке → 404.
     """
 
     model = Product
     template_name = 'product_detail.html'
     context_object_name = 'product'
 
+    # TTL кэша детальной страницы — 5 минут
+    PRODUCT_CACHE_TTL = 300
+
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
 
-        # Аноним — только опубликованные
         if not user.is_authenticated:
             return qs.filter(is_published=True)
 
-        # Модератор или суперюзер — все
         if user.is_superuser or user.is_moderator:
             return qs
 
-        # Владелец — свои (любые) + опубликованные чужие
         return qs.filter(Q(is_published=True) | Q(owner=user))
+
+    def get_object(self, queryset=None):
+        """Достаём товар с учётом прав.
+
+        Кэшируем только для анонимов и только опубликованные товары.
+        """
+        user = self.request.user
+        pk = self.kwargs.get(self.pk_url_kwarg or 'pk')
+
+        # 1. Пытаемся взять из кэша — только для анонима
+        if not user.is_authenticated:
+            cache_key = f'product_detail_{pk}'
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return cached
+
+        # 2. Идём в БД с фильтром по правам
+        qs = self.get_queryset()
+        obj = get_object_or_404(qs, pk=pk)
+
+        # 3. Кэшируем только опубликованный товар и только для анонима
+        if not user.is_authenticated and obj.is_published:
+            cache.set(f'product_detail_{pk}', obj, timeout=self.PRODUCT_CACHE_TTL)
+
+        return obj
 
 
 class ProductCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
-    """Форма добавления товара. Только для авторизованных.
-
-    Автоматически привязывает товар к текущему пользователю (owner).
-    """
+    """Форма добавления товара. Только для авторизованных."""
 
     model = Product
     form_class = ProductForm
@@ -154,10 +173,8 @@ class ProductCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def form_valid(self, form):
         product = form.save(commit=False)
 
-        # По критерию: owner заполняется автоматом из request.user
         product.owner = self.request.user
 
-        # Генерируем уникальный slug из name
         base_slug = slugify(product.name, allow_unicode=True)
         slug = base_slug
         counter = 1
