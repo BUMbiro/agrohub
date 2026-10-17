@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Редактировать статью{% else %}Новая статья{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <h2 class="section-title">
+            {% if object %}Редактировать статью{% else %}Новая статья{% endif %}
+        </h2>
+
+        <div class="card p-4">
+            <form method="POST" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.title.label }} *</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.content.label }} *</label>
+                    {{ form.content }}
+                    {% if form.content.errors %}<div class="text-danger small">{{ form.content.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.preview.label }}</label>
+                    {{ form.preview }}
+                    {% if form.preview.errors %}<div class="text-danger small">{{ form.preview.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3 form-check">
+                    {{ form.is_published }}
+                    <label class="form-check-label">{{ form.is_published.label }}</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="{% url 'blog:blogpost_list' %}" class="btn btn-secondary">Отмена</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

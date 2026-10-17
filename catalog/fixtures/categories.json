@@ -1,0 +1,83 @@
+[
+{
+  "model": "catalog.category",
+  "pk": 3,
+  "fields": {
+    "name": "Семена",
+    "slug": "semena",
+    "description": "Семена овощных и зерновых культур"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 4,
+  "fields": {
+    "name": "Удобрения",
+    "slug": "udobreniya",
+    "description": "Минеральные и органические удобрения"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 5,
+  "fields": {
+    "name": "Инструменты",
+    "slug": "instrumenty",
+    "description": "Садовый и сельхозинструмент"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 6,
+  "fields": {
+    "name": "Агрохимикаты",
+    "slug": "agrochemicals",
+    "description": "Средства защиты растений и подкормки"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 7,
+  "fields": {
+    "name": "Инвентарь",
+    "slug": "garden_tools",
+    "description": "Садовый и огородный инвентарь"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 8,
+  "fields": {
+    "name": "Электроинструменты",
+    "slug": "power_tools",
+    "description": "Бензо- и электроинструмент для сада"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 9,
+  "fields": {
+    "name": "Мини-техника",
+    "slug": "mini_equipment",
+    "description": "Мини-тракторы, мотоблоки, культиваторы"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 10,
+  "fields": {
+    "name": "Орошение",
+    "slug": "irrigation",
+    "description": "Системы полива и орошения"
+  }
+},
+{
+  "model": "catalog.category",
+  "pk": 11,
+  "fields": {
+    "name": "Саженцы",
+    "slug": "seedlings",
+    "description": "Саженцы деревьев и кустарников"
+  }
+}
+]

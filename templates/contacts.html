@@ -25,11 +25,21 @@
     </div>
     <div class="col-md-6">
         <div class="card p-3">
-            <h5>Наш офис в Астрахани</h5>
-            <iframe src="https://yandex.ru/map-widget/v1/?um=constructor%3A1234567890abcdef&source=constructor" width="100%" height="250" frameborder="0"></iframe>
-            <p><i class="bi bi-geo-alt"></i> г. Астрахань, ул. Агрономическая, д. 1</p>
-            <p><i class="bi bi-telephone"></i> +7 (8512) 12-34-56</p>
-            <p><i class="bi bi-envelope"></i> info@agrohub.ru</p>
+            {% if contact_info %}
+                {# Данные из БД (модель Contact, заполняется через админку) #}
+                <h5>{{ contact_info.name }}</h5>
+                <iframe src="https://yandex.ru/map-widget/v1/?um=constructor%3A1234567890abcdef&source=constructor" width="100%" height="250" frameborder="0"></iframe>
+                <p><i class="bi bi-geo-alt"></i> {{ contact_info.address }}</p>
+                <p><i class="bi bi-telephone"></i> {{ contact_info.phone }}</p>
+                <p><i class="bi bi-envelope"></i> {{ contact_info.email }}</p>
+            {% else %}
+                {# Заглушка, если контакт ещё не создан в админке #}
+                <h5>Наш офис в Астрахани</h5>
+                <iframe src="https://yandex.ru/map-widget/v1/?um=constructor%3A1234567890abcdef&source=constructor" width="100%" height="250" frameborder="0"></iframe>
+                <p><i class="bi bi-geo-alt"></i> г. Астрахань, ул. Агрономическая, д. 1</p>
+                <p><i class="bi bi-telephone"></i> +7 (8512) 12-34-56</p>
+                <p><i class="bi bi-envelope"></i> info@agrohub.ru</p>
+            {% endif %}
         </div>
     </div>
 </div>

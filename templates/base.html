@@ -22,36 +22,92 @@
         .dropdown-menu { background: #1a3a2a; }
         .dropdown-item { color: #d4e8d4 !important; }
         .dropdown-item:hover { background: #2e7d32; color: #fff !important; }
+
+        /* Пагинация в цветах темы */
+        .pagination .page-link {
+            color: #1a3a2a;
+            border-color: #c8e6c9;
+        }
+        .pagination .page-link:hover {
+            background: #e8f5e9;
+            color: #1a3a2a;
+            border-color: #4caf50;
+        }
+        .pagination .page-item.active .page-link {
+            background: #4caf50;
+            border-color: #4caf50;
+            color: #fff;
+        }
+        .pagination .page-item.disabled .page-link {
+            color: #b0c8b0;
+            background: #f4f7f6;
+            border-color: #e0e0e0;
+        }
+
+        /* Разделитель между навигацией и блоком аккаунта */
+        .nav-separator {
+            display: inline-block;
+            width: 1px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 0 10px;
+        }
+
+        /* Общий стиль для кнопок авторизации */
+        .auth-btn {
+            padding: 6px 16px !important;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+
+        /* Контурная кнопка "Войти" */
+        .navbar-nav .nav-link.auth-btn-outline {
+            border: 2px solid #8bc34a !important;
+            color: #8bc34a !important;
+        }
+        .navbar-nav .nav-link.auth-btn-outline:hover {
+            background: #8bc34a !important;
+            color: #1a3a2a !important;
+        }
+
+        /* Заливная кнопка "Регистрация" */
+        .navbar-nav .nav-link.auth-btn-primary {
+            background: #4caf50 !important;
+            color: #fff !important;
+        }
+        .navbar-nav .nav-link.auth-btn-primary:hover {
+            background: #388e3c !important;
+            color: #fff !important;
+        }
+
+        /* Кнопка авторизованного пользователя */
+        .navbar-nav .nav-link.auth-btn-user {
+            background: rgba(139, 195, 74, 0.15) !important;
+            color: #d4e8d4 !important;
+            border: 2px solid rgba(139, 195, 74, 0.4) !important;
+        }
+        .navbar-nav .nav-link.auth-btn-user:hover {
+            background: rgba(139, 195, 74, 0.25) !important;
+            color: #fff !important;
+        }
+
+        /* Адаптив: на мобильных убираем разделитель и даём отступы кнопкам */
+        @media (max-width: 991px) {
+            .nav-separator {
+                display: none;
+            }
+            .auth-btn {
+                margin-top: 8px;
+                display: inline-block;
+            }
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">🌾 АгроХаб</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">Категории</a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/category/seeds/">Семена</a></li>
-                            <li><a class="dropdown-item" href="/category/fertilizers/">Удобрения</a></li>
-                            <li><a class="dropdown-item" href="/category/agrochemicals/">Агрохимикаты</a></li>
-                            <li><a class="dropdown-item" href="/category/garden_tools/">Инвентарь</a></li>
-                            <li><a class="dropdown-item" href="/category/power_tools/">Электроинструменты</a></li>
-                            <li><a class="dropdown-item" href="/category/mini_equipment/">Мини-техника</a></li>
-                            <li><a class="dropdown-item" href="/category/irrigation/">Орошение</a></li>
-                            <li><a class="dropdown-item" href="/category/seedlings/">Саженцы</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="/contacts/">Контакты</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    {# Подшаблон главного меню #}
+    {% include 'includes/_menu.html' %}
 
     <main class="container">
         {% if messages %}

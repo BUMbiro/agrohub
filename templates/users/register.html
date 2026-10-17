@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-6 offset-md-3">
+        <h2 class="section-title">Регистрация</h2>
+
+        <div class="card p-4">
+            <form method="POST" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.email.label }} *</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
+                </div>
+
+                {# Пароль с кнопкой-глазиком #}
+                <div class="mb-3">
+                    <label class="form-label">{{ form.password1.label }} *</label>
+                    <div class="input-group">
+                        {{ form.password1 }}
+                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="{{ form.password1.id_for_label }}" title="Показать пароль">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password1.errors %}<div class="text-danger small">{{ form.password1.errors.0 }}</div>{% endif %}
+                </div>
+
+                {# Подтверждение пароля с кнопкой-глазиком #}
+                <div class="mb-3">
+                    <label class="form-label">{{ form.password2.label }} *</label>
+                    <div class="input-group">
+                        {{ form.password2 }}
+                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="{{ form.password2.id_for_label }}" title="Показать пароль">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password2.errors %}<div class="text-danger small">{{ form.password2.errors.0 }}</div>{% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                <a href="{% url 'catalog:home' %}" class="btn btn-secondary">Отмена</a>
+            </form>
+
+            <hr>
+            <p class="text-center mb-0">
+                Уже есть аккаунт? <a href="{% url 'users:login' %}">Войти</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+{# JS: показ/скрытие пароля #}
+<script>
+document.querySelectorAll('.toggle-password').forEach(function (button) {
+    button.addEventListener('click', function () {
+        const targetId = this.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        const icon = this.querySelector('i');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+            this.title = 'Скрыть пароль';
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+            this.title = 'Показать пароль';
+        }
+    });
+});
+</script>
+{% endblock %}

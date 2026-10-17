@@ -3,8 +3,29 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-your-secret-key'
-DEBUG = True
+
+def _load_env_file(path):
+    """Простой парсер .env: читает KEY=VALUE и выставляет их в os.environ."""
+    if not path.exists():
+        return
+    with open(path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, _, value = line.partition('=')
+            os.environ.setdefault(key.strip(), value.strip())
+
+
+# Загружаем переменные из .env
+_load_env_file(BASE_DIR / '.env')
+
+# Секретный ключ из .env
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key')
+
+# DEBUG из .env
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
@@ -14,7 +35,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'blog',
     'catalog',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -40,6 +63,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'catalog.context_processors.menu_categories',
             ],
         },
     },
@@ -47,10 +71,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# PostgreSQL
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -68,7 +97,18 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Медиа
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Кастомная модель пользователя
+AUTH_USER_MODEL = 'users.User'
+
+# Email — заглушка в dev
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@agrohub.local'
+
+# Куда редиректить неавторизованных
+LOGIN_URL = 'users:login'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

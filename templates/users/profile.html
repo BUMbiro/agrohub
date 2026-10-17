@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Мой профиль{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <h2 class="section-title">Мой профиль</h2>
+
+        <div class="card p-4">
+            <div class="row mb-4">
+                <div class="col-md-3 text-center">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="Аватар" class="img-fluid rounded-circle" style="max-width: 150px;">
+                    {% else %}
+                        <div class="bg-soft-green rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                            <span style="font-size: 5rem;">👨‍🌾</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-9">
+                    <h4>{{ user.email }}</h4>
+                    <p class="text-muted">
+                        {% if user.first_name or user.last_name %}
+                            {{ user.first_name }} {{ user.last_name }}
+                        {% else %}
+                            Имя не указано
+                        {% endif %}
+                    </p>
+                    <p class="text-muted small">Дата регистрации: {{ user.date_joined|date:"d.m.Y" }}</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <h5 class="mb-3">Редактировать данные</h5>
+
+            <form method="POST" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.first_name.label }}</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.last_name.label }}</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.email.label }} *</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.phone_number.label }}</label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}<div class="text-danger small">{{ form.phone_number.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.country.label }}</label>
+                        {{ form.country }}
+                        {% if form.country.errors %}<div class="text-danger small">{{ form.country.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.avatar.label }}</label>
+                    {{ form.avatar }}
+                    {% if form.avatar.errors %}<div class="text-danger small">{{ form.avatar.errors.0 }}</div>{% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                <a href="{% url 'catalog:home' %}" class="btn btn-secondary">На главную</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
