@@ -2,6 +2,7 @@ asgiref==3.12.1
 asttokens==3.0.2
 colorama==0.4.6
 Django==6.1.1
+django-redis==6.0.0
 executing==2.2.1
 ipython==9.17.1
 ipython_pygments_lexers==1.1.1
@@ -15,6 +16,7 @@ psycopg2-binary==2.9.13
 pure_eval==0.2.3
 Pygments==2.21.0
 python-dotenv==1.2.3
+redis==7.1.0
 sqlparse==0.6.0
 stack-data==0.6.3
 traitlets==5.16.1
