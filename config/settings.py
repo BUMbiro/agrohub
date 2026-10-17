@@ -112,3 +112,21 @@ DEFAULT_FROM_EMAIL = 'noreply@agrohub.local'
 LOGIN_URL = 'users:login'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ============================================================
+# Кэширование (Redis)
+# ============================================================
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        # /1 — отдельная логическая БД Redis (0–15), чтобы не мешать другим проектам
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        # TTL по умолчанию — 5 минут (300 секунд)
+        'TIMEOUT': 300,
+    }
+}

@@ -77,10 +77,14 @@
 - **django.contrib.auth** – аутентификация и авторизация.
 - **AbstractUser + UserManager** – кастомная модель пользователя.
 - **LoginRequiredMixin** – защита контроллеров.
-- **django.test.TestCase** – unit-тесты (58 шт.).
+- **django.test.TestCase** – unit-тесты (63 шт.).
 - **url_has_allowed_host_and_scheme** – защита от `Open Redirect`.
 - **django.contrib.auth.models.Group, Permission** – роли и права (модератор продуктов, контент-менеджер).
 - **UserPassesTestMixin / кастомные миксины** – проверка прав на управление объектом.
+- **Redis 7** — кэш-хранилище (через Docker).
+- **django-redis** — бэкенд кэширования для Django.
+- **Docker / Docker Compose** — контейнеризация Redis для локальной разработки.
+- **django.core.cache** — низкоуровневое кэширование (сервисы, детальные страницы).
 
 ---
 
@@ -110,12 +114,36 @@ CREATE USER agrohub_user WITH PASSWORD 'ваш_пароль';
 ALTER USER agrohub_user CREATEDB;
 CREATE DATABASE agrohub WITH OWNER = agrohub_user ENCODING = 'UTF8';
 ```
+
+### 4.1. Запустите Redis через Docker Compose
+
+```bash
+docker compose up -d
+```
+
+Проверка, что Redis работает:
+
+```bash
+docker exec -it agrohub-redis redis-cli ping
+```
+Ожидаем: `PONG`.
+
+Если `Docker` не установлен — установите `Docker Desktop` с официального сайта.
+На Windows требуется WSL 2 (обычно включается автоматически при установке Docker).
+
+Остановить `Redis`:
+
+```bash
+docker compose down
+```
+
 ### 5. Настройте переменные окружения
 Скопируйте .env.template в .env и заполните своими значениями:
 
 ```bash
 cp .env.template .env    # Windows: copy .env.template .env
 ```
+
 Пример содержимого `.env`:
 
 ```env
@@ -190,14 +218,14 @@ agrohub/
 │   │   ├── __init__.py
 │   │   └── 0001_initial.py               # Миграция кастомной модели User
 │   ├── __init__.py
-│   ├── admin.py                          # Админка User (list_display, фильтры, поиск)
+│   ├── admin.py                          # Админка User
 │   ├── apps.py
 │   ├── forms.py                          # RegisterForm, LoginForm, ProfileForm
-│   ├── managers.py                       # UserManager (создание по email, автоген username)
-│   ├── models.py                         # User (AbstractUser, USERNAME_FIELD='email', property is_moderator)
-│   ├── tests.py                          # 12 тестов (регистрация, логин, профиль, logout)
-│   ├── urls.py                           # register / login / logout / profile
-│   └── views.py                          # CBV для аутентификации
+│   ├── managers.py                       # UserManager (автоген username)
+│   ├── models.py                         # User (property is_moderator, is_content_manager)
+│   ├── tests.py                          # 12 тестов
+│   ├── urls.py
+│   └── views.py
 ├── blog/                                 # Приложение блога
 │   ├── migrations/
 │   │   ├── __init__.py
@@ -205,25 +233,25 @@ agrohub/
 │   │   ├── 0002_alter_blogpost_options_blogpost_author_and_more.py
 │   │   └── 0003_publish_existing_blogposts.py
 │   ├── __init__.py
-│   ├── admin.py                          # Админка BlogPost (author, is_published, автокомплит)
+│   ├── admin.py
 │   ├── apps.py
-│   ├── forms.py                          # BlogPostForm (без is_published)
-│   ├── models.py                         # BlogPost (author FK, permissions, хелперы прав)
-│   ├── tests.py                          # 19 тестов (права автора/контент-менеджера, фильтр)
-│   ├── urls.py                           # Маршруты блога (включая toggle-publish)
-│   └── views.py                          # CBV блога + toggle публикации
+│   ├── forms.py
+│   ├── models.py                         # BlogPost (author, permissions)
+│   ├── tests.py                          # 24 теста
+│   ├── urls.py
+│   └── views.py                          # + toggle публикации
 ├── catalog/                              # Приложение каталога
-│   ├── fixtures/                         # Фикстуры
+│   ├── fixtures/
 │   │   ├── .gitkeep
-│   │   ├── categories.json               # 9 категорий
-│   │   └── products.json                 # 12 товаров (is_published=true)
+│   │   ├── categories.json
+│   │   └── products.json                 # is_published=true
 │   ├── management/
 │   │   ├── __init__.py
 │   │   └── commands/
 │   │       ├── __init__.py
-│   │       ├── create_moderator_group.py         # Группа «Модератор продуктов»
-│   │       ├── create_content_manager_group.py   # Группа «Контент-менеджер»
-│   │       └── load_test_data.py                 # Кастомная команда загрузки данных
+│   │       ├── create_moderator_group.py
+│   │       ├── create_content_manager_group.py
+│   │       └── load_test_data.py
 │   ├── migrations/
 │   │   ├── __init__.py
 │   │   ├── 0001_initial.py
@@ -231,53 +259,57 @@ agrohub/
 │   │   ├── 0003_contact.py
 │   │   ├── 0004_alter_product_options_product_is_published_and_more.py
 │   │   └── 0005_publish_existing_products.py
+│   ├── services/                         # НОВОЕ: сервисный слой
+│   │   ├── __init__.py
+│   │   └── products.py                   # get_products_by_category с кэшем в Redis
 │   ├── __init__.py
-│   ├── admin.py                          # Админка каталога (owner, is_published)
+│   ├── admin.py
 │   ├── apps.py
-│   ├── context_processors.py             # Категории во все шаблоны
-│   ├── forms.py                          # ProductForm с валидацией
-│   ├── models.py                         # Category, Product (owner, permissions), News, Contact
-│   ├── tests.py                          # 17 тестов (owner, права владельца/модератора, фильтр)
-│   ├── urls.py                           # Маршруты каталога (включая toggle-publish)
-│   └── views.py                          # CBV каталога + toggle публикации
-├── config/                               # Настройки проекта
+│   ├── context_processors.py
+│   ├── forms.py
+│   ├── models.py                         # Category, Product (owner), News, Contact
+│   ├── tests.py                          # 26 тестов (включая 4 на кэш)
+│   ├── urls.py
+│   └── views.py                          # + кэш детальной
+├── config/
 │   ├── __init__.py
 │   ├── asgi.py
-│   ├── settings.py                       # PostgreSQL, .env, MEDIA, EMAIL, AUTH_USER_MODEL
-│   ├── urls.py                           # include users, blog, catalog
+│   ├── settings.py                       # + CACHES (Redis)
+│   ├── urls.py
 │   └── wsgi.py
-├── templates/                            # Шаблоны HTML
-│   ├── users/                            # Шаблоны аутентификации
+├── templates/
+│   ├── users/
 │   │   ├── register.html
 │   │   ├── login.html
 │   │   └── profile.html
-│   ├── blog/                             # Шаблоны блога
-│   │   ├── blogpost_list.html            # + бейдж «Черновик» по ролям
-│   │   ├── blogpost_detail.html          # + кнопки по ролям + toggle публикации
+│   ├── blog/
+│   │   ├── blogpost_list.html
+│   │   ├── blogpost_detail.html
 │   │   ├── blogpost_form.html
 │   │   └── blogpost_confirm_delete.html
 │   ├── includes/
-│   │   └── _menu.html                    # Подшаблон главного меню (с блоком авторизации)
-│   ├── base.html                         # Базовый шаблон
-│   ├── home.html                         # Главная (фильтр по ролям + бейдж «Черновик»)
-│   ├── category_detail.html              # Товары в категории
-│   ├── product_detail.html               # Детальная страница (кнопки по ролям + toggle)
-│   ├── product_form.html                 # Форма создания/редактирования
-│   ├── product_confirm_delete.html       # Подтверждение удаления товара
-│   └── contacts.html                     # Контакты
-├── screenshots/                          # Скриншоты работы
+│   │   └── _menu.html
+│   ├── base.html
+│   ├── home.html
+│   ├── category_detail.html
+│   ├── product_detail.html
+│   ├── product_form.html
+│   ├── product_confirm_delete.html
+│   └── contacts.html
+├── screenshots/
 │   ├── .gitkeep
 │   └── ...png
-├── media/                                # Загруженные файлы
-│   ├── blog/previews/                    # Превью статей
-│   ├── products/                         # Изображения товаров
-│   └── users/avatars/                    # Аватары пользователей
-├── .env                                  # Переменные окружения (не в git)
-├── .env.template                         # Шаблон .env
-├── .gitignore                            # Игнорируемые файлы
-├── manage.py                             # Управляющий скрипт
-├── README.md                             # Документация
-└── requirements.txt                      # Зависимости
+├── media/
+│   ├── blog/previews/
+│   ├── products/
+│   └── users/avatars/
+├── .env                                  # Переменные (не в git)
+├── .env.template
+├── .gitignore
+├── docker-compose.yml                    # НОВОЕ: Redis-контейнер
+├── manage.py
+├── README.md
+└── requirements.txt
 ```
 
 ---
@@ -414,14 +446,101 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 ---
 
-## 🧪 Тесты
-В проекте 58 unit-тестов (django.test.TestCase):
+## ⚡ Кэширование (Redis)
 
-- **users** — регистрация (5), логин (3), редактирование профиля (3), logout (1) — 12 тестов.
+### Что кэшируется
+
+1. **Детальная страница товара** — данные товара кэшируются для анонимных пользователей.
+2. **Список товаров в категории** — через сервис `get_products_by_category`, ключ `category_{id}`.
+
+### Настройка
+
+В `config/settings.py`:
+
+```python
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'TIMEOUT': 300,  # TTL по умолчанию — 5 минут
+    }
+}
+```
+
+- **База Redis /1** — отдельная логическая БД (0–15), чтобы не мешать другим проектам.
+
+- **TTL = 300 секунд (5 минут)** — баланс между актуальностью и нагрузкой на БД. Каталог обновляется нечасто, 
+5 минут — разумно.
+
+### Ключи в Redis
+`Django-redis` добавляет к ключам префикс версии и префикс `KEY_PREFIX` (по умолчанию — :1:). Поэтому в `redis-cli` 
+ключ `category_3` выглядит как `:1:category_3`.
+
+**Проверить:**
+
+```bash
+docker exec -it agrohub-redis redis-cli -n 1 KEYS "*"
+```
+
+**Пример вывода:**
+
+```text
+1) ":1:category_3"
+2) ":1:product_detail_2"
+```
+
+**Проверить TTL:**
+
+```bash
+docker exec -it agrohub-redis redis-cli -n 1 TTL ":1:category_3"
+```
+
+Ожидаем: число от **0** до **300**.
+
+**Кэш детальной страницы товара**
+
+- Кэшируется только для анонимов — авторизованные видят страницу с учётом прав (кнопки, черновики), поэтому для них кэш 
+не используется.
+- Кэшируются только опубликованные товары — черновики не утекают в общий кэш.
+- Ключ: `product_detail_{pk}`, `TTL`: **300** секунд.
+- Логика — в `catalog/views.py` → `ProductDetailView.get_object`.
+
+**Кэш списка товаров категории**
+
+- Сервис — `catalog/services/products.py` → `get_products_by_category(category_id)`.
+- Ключ — `category_{id}`, `TTL`: **300** секунд.
+- Кэшируются только опубликованные товары — безопасность.
+- Логика:
+  - Пытаемся взять из `Redis` по ключу `category_{id}`.
+  - Если нет — идём в БД, сериализуем в список словарей, кладём в `Redis`.
+  - Возвращаем список.
+
+**Проверка кэша**
+
+1. Аноним открывает `/products/2/` → в `Redis` появляется `:1:product_detail_2`.
+2. Авторизованный открывает тот же `URL` → ключ не создаётся.
+3. Открыть категорию `/category/semena/` → в `Redis` появляется `:1:category_3`.
+
+**Сброс кэша:**
+
+```bash
+docker exec -it agrohub-redis redis-cli -n 1 FLUSHDB
+```
+> ⚠️ FLUSHDB очищает всю базу /1. Используй с осторожностью (в dev — норм).
+
+---
+
+## 🧪 Тесты
+В проекте **63 unit-теста** (django.test.TestCase):
+
+- **users** — регистрация (5), логин (3), редактирование профиля (3), logout (1) — **12 тестов**.
 - **catalog** — защита CRUD от анонимов (5), привязка owner при создании (1), права владельца/модератора/чужого (8),
-фильтр главной по ролям (3), скрытие черновиков по прямой ссылке (4) — 22 теста.
+фильтр главной по ролям (3), скрытие черновиков по прямой ссылке (4), **кэш категории (2), кэш детальной (3)** — **26 тестов**.
 - **blog** — защита CRUD от анонимов (5), счётчик просмотров (1), привязка author при создании (1),
-права автора/контент-менеджера/чужого (9), фильтр списка по ролям (3), скрытие черновиков по прямой ссылке (5) — 24 теста.
+права автора/контент-менеджера/чужого (9), фильтр списка по ролям (3), скрытие черновиков по прямой ссылке (5) — **24 теста**.
 
 **Покрыты сценарии:**
 
@@ -435,6 +554,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 - владелец/автор видит свои черновики;
 - чужой черновик по прямой ссылке недоступен (404) — для товаров и статей;
 - счётчик просмотров статьи не растёт при 404.
+- кэш категории создаётся с TTL 300 и повторно берётся из Redis;
+- кэш детальной страницы создаётся только для анонимов и только для опубликованных товаров.
 
 **Для запуска:**
 
@@ -480,14 +601,15 @@ python manage.py test
 
 ### Технические улучшения
 - **Оптимизация запросов** – `select_related` и `prefetch_related` для пагинации и связей.
-- **Расширение покрытия тестами** – добавление тестов на формы, модели, дополнительные сценарии (сейчас 58 тестов).
+- **Расширение покрытия тестами** – добавление тестов на формы, модели, дополнительные сценарии (сейчас 63 теста).
 - **Реальные SMTP-настройки** – для отправки писем в продакшене.
 - **Кастомная страница 403** – сейчас при отсутствии прав отдаётся стандартная страница Django.
 
 ### Инфраструктура
-- **Docker** – контейнеризация проекта для быстрого развёртывания.
+- **Docker** – контейнеризация всего проекта (Redis уже в Docker).
 - **CI/CD** – автозапуск тестов и проверок при push.
 - **Деплой** – выложить проект на реальный хостинг (например, PythonAnywhere или VPS).
+- **Кэширование блога** – аналогично товарам, для списка и детальной статьи.
 
 ---
 
