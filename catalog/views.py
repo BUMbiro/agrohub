@@ -12,6 +12,7 @@ from django.views.generic import (
 
 from .models import Product, Category, News, Contact
 from .forms import ProductForm
+from .services.products import get_products_by_category
 
 
 # ============================================================
@@ -82,7 +83,14 @@ class HomeView(ListView):
 # ============================================================
 
 class CategoryDetailView(DetailView):
-    """Страница категории с товарами."""
+    """Страница категории с товарами.
+
+    Товары берём через сервис get_products_by_category — он кэширует
+    результат в Redis по ключу `category_{id}` с TTL 300 секунд.
+
+    В шаблоне products — это список словарей (не QuerySet),
+    поэтому поля доступны как product.name, product.image_url и т.д.
+    """
 
     model = Category
     template_name = 'category_detail.html'
@@ -92,10 +100,8 @@ class CategoryDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Показываем только товары в наличии и опубликованные
-        context['products'] = self.object.products.filter(
-            in_stock=True, is_published=True,
-        )
+        # Сервис вернёт список словарей из кэша (или БД, если кэш пуст)
+        context['products'] = get_products_by_category(self.object.id)
         return context
 
 
