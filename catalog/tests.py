@@ -1,4 +1,4 @@
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.test import TestCase, Client
 from django.urls import reverse
 
@@ -24,6 +24,7 @@ class ProductCRUDPermissionsTests(TestCase):
             description='Сладкие томаты',
             price=150,
             unit='упак.',
+            is_published=True,   # опубликован, чтобы аноним мог видеть детальную
         )
 
     def test_anonymous_cannot_create_product(self):
@@ -50,7 +51,7 @@ class ProductCRUDPermissionsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_anonymous_can_view_product_detail(self):
-        """Аноним может смотреть детальную товара."""
+        """Аноним может смотреть детальную опубликованного товара."""
         response = self.client.get(reverse('catalog:product_detail', args=[self.product.pk]))
         self.assertEqual(response.status_code, 200)
 
@@ -114,8 +115,6 @@ class ProductModerationTests(TestCase):
             password='test12345',
         )
         group = Group.objects.create(name='Модератор продуктов (тест)')
-        # Находим право can_unpublish_product
-        from django.contrib.auth.models import Permission
         perm = Permission.objects.get(
             codename='can_unpublish_product',
             content_type__app_label='catalog',
@@ -228,7 +227,6 @@ class HomeViewFilterTests(TestCase):
             email='moder@test.ru',
             password='test12345',
         )
-        from django.contrib.auth.models import Permission
         perm = Permission.objects.get(
             codename='can_unpublish_product',
             content_type__app_label='catalog',
@@ -282,3 +280,72 @@ class HomeViewFilterTests(TestCase):
         names = [p.name for p in products]
         self.assertIn('Опубликованный', names)
         self.assertIn('Черновик', names)
+
+
+class ProductDraftVisibilityTests(TestCase):
+    """Тесты скрытия черновиков товаров от чужих по прямой ссылке (404)."""
+
+    def setUp(self):
+        self.client = Client()
+
+        self.owner = User.objects.create_user(
+            email='owner@test.ru',
+            password='test12345',
+        )
+        self.other = User.objects.create_user(
+            email='other@test.ru',
+            password='test12345',
+        )
+        self.moderator = User.objects.create_user(
+            email='moder@test.ru',
+            password='test12345',
+        )
+        perm = Permission.objects.get(
+            codename='can_unpublish_product',
+            content_type__app_label='catalog',
+        )
+        self.moderator.user_permissions.add(perm)
+
+        self.category = Category.objects.create(name='Семена', slug='semena')
+
+        # Черновик владельца (is_published=False)
+        self.draft = Product.objects.create(
+            category=self.category,
+            owner=self.owner,
+            name='Черновик',
+            slug='draft',
+            description='Скрытый',
+            price=100,
+            is_published=False,
+        )
+
+    def test_anonymous_cannot_view_draft(self):
+        """Аноним не может открыть черновик по прямой ссылке — 404."""
+        response = self.client.get(
+            reverse('catalog:product_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_other_user_cannot_view_draft(self):
+        """Другой юзер не может открыть чужой черновик — 404."""
+        self.client.force_login(self.other)
+        response = self.client.get(
+            reverse('catalog:product_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_can_view_own_draft(self):
+        """Владелец видит свой черновик — 200."""
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse('catalog:product_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_moderator_can_view_any_draft(self):
+        """Модератор видит любой черновик — 200."""
+        self.client.force_login(self.moderator)
+        response = self.client.get(
+            reverse('catalog:product_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 200)

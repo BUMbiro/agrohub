@@ -30,14 +30,11 @@ class ProductPermissionMixin:
     """
 
     def dispatch(self, request, *args, **kwargs):
-        # Сначала проверяем, что пользователь вообще авторизован
         if not request.user.is_authenticated:
             return self.handle_no_permission()
 
-        # Достаём товар (нужен для проверки прав)
         self.object = self.get_object()
 
-        # Проверяем право управления через хелпер на модели
         if not self.object.can_be_managed_by(request.user):
             raise PermissionDenied('У вас нет прав на управление этим товаром.')
 
@@ -62,28 +59,21 @@ class HomeView(ListView):
     paginate_by = 6
 
     def get_queryset(self):
-        """Фильтруем товары по роли пользователя."""
         qs = Product.objects.select_related('category', 'owner')
 
         user = self.request.user
 
-        # Аноним или обычный юзер — только опубликованные
         if not user.is_authenticated:
             return qs.filter(is_published=True)
 
-        # Модератор (или суперюзер) — видит всё
         if user.is_superuser or user.is_moderator:
             return qs
 
-        # Владелец — свои товары (любые) + опубликованные чужие
         return qs.filter(Q(is_published=True) | Q(owner=user))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Новости отдельным запросом
         context['news'] = News.objects.order_by('-date')[:6]
-
         return context
 
 
@@ -114,11 +104,34 @@ class CategoryDetailView(DetailView):
 # ============================================================
 
 class ProductDetailView(DetailView):
-    """Детальная страница товара. Работает по pk. Общедоступна."""
+    """Детальная страница товара. Общедоступна, но черновики — только своим.
+
+    Логика queryset:
+    - аноним и обычный юзер — только опубликованные товары;
+    - модератор и суперюзер — все;
+    - владелец — свои (включая черновики) + опубликованные чужие.
+
+    Чужой черновик по прямой ссылке → 404 (объект «не существует»).
+    """
 
     model = Product
     template_name = 'product_detail.html'
     context_object_name = 'product'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+
+        # Аноним — только опубликованные
+        if not user.is_authenticated:
+            return qs.filter(is_published=True)
+
+        # Модератор или суперюзер — все
+        if user.is_superuser or user.is_moderator:
+            return qs
+
+        # Владелец — свои (любые) + опубликованные чужие
+        return qs.filter(Q(is_published=True) | Q(owner=user))
 
 
 class ProductCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -133,7 +146,6 @@ class ProductCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     success_message = 'Товар «%(name)s» добавлен!'
 
     def form_valid(self, form):
-        """Генерируем slug и проставляем owner перед сохранением."""
         product = form.save(commit=False)
 
         # По критерию: owner заполняется автоматом из request.user
@@ -153,30 +165,22 @@ class ProductCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        """Редирект на страницу нового товара."""
         return reverse_lazy('catalog:product_detail', kwargs={'pk': self.object.pk})
 
 
 class ProductUpdateView(LoginRequiredMixin, ProductPermissionMixin, UpdateView):
-    """Редактирование товара.
-
-    Доступно только владельцу, модератору или суперюзеру.
-    """
+    """Редактирование товара. Доступно владельцу, модератору, суперюзеру."""
 
     model = Product
     form_class = ProductForm
     template_name = 'product_form.html'
 
     def get_success_url(self):
-        """Редирект на страницу отредактированного товара."""
         return reverse_lazy('catalog:product_detail', kwargs={'pk': self.object.pk})
 
 
 class ProductDeleteView(LoginRequiredMixin, ProductPermissionMixin, DeleteView):
-    """Удаление товара с подтверждением.
-
-    Доступно только владельцу, модератору или суперюзеру.
-    """
+    """Удаление товара. Доступно владельцу, модератору, суперюзеру."""
 
     model = Product
     template_name = 'product_confirm_delete.html'
@@ -185,30 +189,22 @@ class ProductDeleteView(LoginRequiredMixin, ProductPermissionMixin, DeleteView):
 
 
 class ProductTogglePublishView(LoginRequiredMixin, View):
-    """Переключение статуса публикации товара.
-
-    Доступно только модератору или суперюзеру (право can_unpublish_product).
-    Если товар опубликован — снимаем с публикации, иначе — публикуем обратно.
-    """
+    """Переключение статуса публикации товара. Только модератор/суперюзер."""
 
     def post(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
 
-        # Проверяем право на изменение публикации
         if not product.can_be_unpublished_by(request.user):
             raise PermissionDenied('У вас нет прав на изменение публикации.')
 
-        # Переключаем статус
         product.is_published = not product.is_published
         product.save(update_fields=['is_published', 'updated_at'])
 
-        # Сообщение пользователю
         if product.is_published:
             messages.success(request, f'Товар «{product.name}» опубликован.')
         else:
             messages.warning(request, f'Товар «{product.name}» снят с публикации.')
 
-        # Редирект обратно на страницу товара
         return redirect('catalog:product_detail', pk=product.pk)
 
 
@@ -227,7 +223,6 @@ class ContactsView(TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        """Обработка POST-запроса от формы обратной связи."""
         name = request.POST.get('name')
         email = request.POST.get('email')
         message = request.POST.get('message')
