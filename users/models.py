@@ -56,13 +56,9 @@ class User(AbstractUser):
 
     @property
     def is_content_manager(self):
-        """Контент-менеджер блога: может управлять статьями.
+        """Контент-менеджер блога: имеет право can_unpublish_blogpost.
 
-        Права появятся после группы «Контент-менеджер» (доп. задание).
-        Пока для обычных юзеров вернёт False.
+        Используется в шаблонах как {% if user.is_content_manager %}.
+        Определяется по кастомному праву (симметрично is_moderator).
         """
-        return (
-            self.has_perm('blog.change_blogpost')
-            or self.has_perm('blog.add_blogpost')
-            or self.has_perm('blog.delete_blogpost')
-        )
+        return self.has_perm('blog.can_unpublish_blogpost')

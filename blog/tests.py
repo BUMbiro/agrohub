@@ -42,7 +42,7 @@ class BlogPostPermissionsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_anonymous_can_view_post_detail(self):
-        """Аноним может смотреть детальную статьи."""
+        """Аноним может смотреть детальную опубликованной статьи."""
         response = self.client.get(reverse('blog:blogpost_detail', args=[self.post.pk]))
         self.assertEqual(response.status_code, 200)
 
@@ -86,12 +86,10 @@ class BlogPostAuthorTests(TestCase):
                 'content': 'Текст моей статьи',
             },
         )
-        # Должен быть редирект на список
         self.assertEqual(response.status_code, 302)
 
         post = BlogPost.objects.get(title='Моя статья')
         self.assertEqual(post.author, self.user)
-        # Статья — черновик по умолчанию
         self.assertFalse(post.is_published)
 
 
@@ -101,17 +99,14 @@ class BlogPostManagementTests(TestCase):
     def setUp(self):
         self.client = Client()
 
-        # Автор статьи
         self.author = User.objects.create_user(
             email='author@test.ru',
             password='test12345',
         )
-        # Другой обычный юзер
         self.other = User.objects.create_user(
             email='other@test.ru',
             password='test12345',
         )
-        # Контент-менеджер
         self.content_manager = User.objects.create_user(
             email='cm@test.ru',
             password='test12345',
@@ -224,11 +219,14 @@ class BlogPostListViewFilterTests(TestCase):
             email='cm@test.ru',
             password='test12345',
         )
+        # Через группу — как в реальном проекте (и кэш прав сбрасывается корректно)
+        group = Group.objects.create(name='Контент-менеджер (тест-фильтр)')
         perm = Permission.objects.get(
             codename='can_unpublish_blogpost',
             content_type__app_label='blog',
         )
-        self.content_manager.user_permissions.add(perm)
+        group.permissions.add(perm)
+        self.content_manager.groups.add(group)
 
         # Опубликованная чужая статья
         self.published = BlogPost.objects.create(
@@ -269,3 +267,79 @@ class BlogPostListViewFilterTests(TestCase):
         titles = [p.title for p in posts]
         self.assertIn('Опубликованная', titles)
         self.assertIn('Черновик', titles)
+
+
+class BlogPostDraftVisibilityTests(TestCase):
+    """Тесты скрытия черновиков статей от чужих по прямой ссылке (404)."""
+
+    def setUp(self):
+        self.client = Client()
+
+        self.author = User.objects.create_user(
+            email='author@test.ru',
+            password='test12345',
+        )
+        self.other = User.objects.create_user(
+            email='other@test.ru',
+            password='test12345',
+        )
+        self.content_manager = User.objects.create_user(
+            email='cm@test.ru',
+            password='test12345',
+        )
+        # Через группу — надёжнее, чем user_permissions.add
+        group = Group.objects.create(name='Контент-менеджер (тест-черновик)')
+        perm = Permission.objects.get(
+            codename='can_unpublish_blogpost',
+            content_type__app_label='blog',
+        )
+        group.permissions.add(perm)
+        self.content_manager.groups.add(group)
+
+        # Черновик автора
+        self.draft = BlogPost.objects.create(
+            author=self.author,
+            title='Черновик',
+            content='Текст',
+            is_published=False,
+        )
+
+    def test_anonymous_cannot_view_draft(self):
+        """Аноним не может открыть черновик по прямой ссылке — 404."""
+        response = self.client.get(
+            reverse('blog:blogpost_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_other_user_cannot_view_draft(self):
+        """Другой юзер не может открыть чужой черновик — 404."""
+        self.client.force_login(self.other)
+        response = self.client.get(
+            reverse('blog:blogpost_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_author_can_view_own_draft(self):
+        """Автор видит свой черновик — 200."""
+        self.client.force_login(self.author)
+        response = self.client.get(
+            reverse('blog:blogpost_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_content_manager_can_view_any_draft(self):
+        """Контент-менеджер видит любой черновик — 200."""
+        self.client.force_login(self.content_manager)
+        response = self.client.get(
+            reverse('blog:blogpost_detail', args=[self.draft.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_views_not_incremented_on_404(self):
+        """Счётчик просмотров не растёт, если черновик не доступен."""
+        initial_views = self.draft.views
+        self.client.get(
+            reverse('blog:blogpost_detail', args=[self.draft.pk])
+        )
+        self.draft.refresh_from_db()
+        self.assertEqual(self.draft.views, initial_views)
